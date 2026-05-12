@@ -358,17 +358,6 @@ function birdFlap() {
     spawnFlapParticles();
 }
 
-// Fungsi lompat yang sama digunakan untuk klik dan sentuh
-function handleInput(e) {
-    if (e.cancelable) e.preventDefault();
-    lompat(); // Panggil fungsi lompat kamu
-}
-
-// Support klik mouse (Laptop)
-canvas.addEventListener('mousedown', handleInput);
-
-// Support sentuhan jari (HP)
-canvas.addEventListener('touchstart', handleInput, { passive: false });
 // ══════════════════════════════════════════
 // PARTICLES — Flap
 // ══════════════════════════════════════════
