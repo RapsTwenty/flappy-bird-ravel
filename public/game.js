@@ -264,7 +264,7 @@ function toggleAuth() {
 async function register() {
     const username = document.getElementById("regUser").value;
     const password = document.getElementById("regPass").value;
-    const res = await fetch(`${URL_API}/register`, {
+    const res = await fetch(`${URL_API}/api/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
@@ -277,7 +277,7 @@ async function register() {
 async function login() {
     const username = document.getElementById("loginUser").value;
     const password = document.getElementById("loginPass").value;
-    const res = await fetch(`${URL_API}/login`, {
+    const res = await fetch(`${URL_API}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
