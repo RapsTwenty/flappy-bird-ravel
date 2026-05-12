@@ -348,9 +348,10 @@ window.addEventListener("keydown", (e) => {
     }
 });
 
-canvas.addEventListener("click", () => {
-    if (gameRunning) birdFlap();
-});
+canvas.addEventListener('touchstart', function(e) {
+    e.preventDefault(); // Mencegah scrolling saat main
+    lompat(); 
+}, false);
 
 function birdFlap() {
     bird.velocity = bird.lift;
