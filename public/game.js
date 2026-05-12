@@ -69,27 +69,6 @@ const TRAILS = [
 ];
 
 // ══════════════════════════════════════════
-// ★ GACHA BOX DATA
-// ══════════════════════════════════════════
-
-const GACHA_BOXES = [
-    {
-        id: 'mystery_box_1',
-        name: 'Mystery Box',
-        price: 50,
-        emoji: '🎁',
-        description: 'Box misterius berisi hadiah acak!'
-    }
-];
-
-// Reward pool untuk gacha (sementara kosong, bisa diisi nanti)
-const GACHA_REWARDS = [
-    // Contoh struktur reward (masih kosong):
-    // { type: 'coin', amount: 10, rarity: 'common', emoji: '🪙' },
-    // { type: 'skin', id: 'aqua', rarity: 'rare', emoji: '💧' },
-];
-
-// ══════════════════════════════════════════
 // ★ SHOP STATE
 // ══════════════════════════════════════════
 
@@ -115,9 +94,9 @@ let clouds       = [];
 let particles    = [];
 let trailParticles = [];
 
-// ══════════════════════════════════════════
-// ★ DELTA TIME — frame-rate independent physics
-// ══════════════════════════════════════════
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+// \u2605 DELTA TIME \u2014 frame-rate independent physics
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 const TARGET_FPS = 60;    // target frame rate
 let   dt         = 1;     // global delta time (1.0 = one 60fps frame)
 let   lastTime   = 0;     // last rAF timestamp
@@ -246,63 +225,214 @@ function loadInventory() {
     }
     // Pastikan item gratis selalu dimiliki
     if (!ownedItems.includes('default')) ownedItems.push('default');
-    if (!ownedItems.includes('none')) ownedItems.push('none');
+    if (!ownedItems.includes('none'))    ownedItems.push('none');
 
-    // Load skin & trail yang sedang digunakan
-    currentSkin = localStorage.getItem(`currentSkin_${currentUser}`) || 'default';
-    currentTrail = localStorage.getItem(`currentTrail_${currentUser}`) || 'none';
+    currentSkin  = localStorage.getItem(`skin_${currentUser}`)  || 'default';
+    currentTrail = localStorage.getItem(`trail_${currentUser}`) || 'none';
 }
 
 function saveInventory() {
     localStorage.setItem(`owned_${currentUser}`, JSON.stringify(ownedItems));
-    localStorage.setItem(`currentSkin_${currentUser}`, currentSkin);
-    localStorage.setItem(`currentTrail_${currentUser}`, currentTrail);
+    localStorage.setItem(`skin_${currentUser}`, currentSkin);
+    localStorage.setItem(`trail_${currentUser}`, currentTrail);
 }
 
 // ══════════════════════════════════════════
-// CONTROLS
-// ══════════════════════════════════════════
-
-// Keyboard
-document.addEventListener("keydown", function (e) {
-    if ((e.code === "Space" || e.code === "ArrowUp") && gameRunning) {
-        e.preventDefault();
-        bird.velocity = bird.lift;
-    }
-});
-
-// Mouse / Touch
-canvas.addEventListener("mousedown", function () {
-    if (gameRunning) bird.velocity = bird.lift;
-});
-canvas.addEventListener("touchstart", function (e) {
-    e.preventDefault();
-    if (gameRunning) bird.velocity = bird.lift;
-});
-
-// ══════════════════════════════════════════
-// ★ DYNAMIC SKIN DATA — handle rainbow animation
+// ★ SKIN HELPER
 // ══════════════════════════════════════════
 
 function getSkinData() {
-    const skin = SKINS.find(s => s.id === currentSkin);
-    if (!skin) return SKINS[0]; // fallback
-
+    const skin = SKINS.find(s => s.id === currentSkin) || SKINS[0];
     if (skin.id === 'rainbow') {
-        const t = Date.now() * 0.001; // time in seconds
-        const hue1 = (t * 50) % 360;
-        const hue2 = (hue1 + 60) % 360;
-        const hue3 = (hue2 + 60) % 360;
+        const t = Date.now() / 800;
+        const h = (t * 60) % 360;
         return {
             ...skin,
             body: [
-                `hsl(${hue1}, 100%, 60%)`,
-                `hsl(${hue2}, 100%, 50%)`,
-                `hsl(${hue3}, 100%, 40%)`
-            ]
+                `hsl(${h % 360}, 100%, 65%)`,
+                `hsl(${(h + 40) % 360}, 100%, 50%)`,
+                `hsl(${(h + 80) % 360}, 100%, 35%)`
+            ],
+            glow: `hsla(${h % 360}, 100%, 60%, 0.8)`,
+            wing: `hsla(${(h + 120) % 360}, 100%, 60%, 0.7)`
         };
     }
     return skin;
+}
+
+// ══════════════════════════════════════════
+// AUTH SYSTEM
+// ══════════════════════════════════════════
+
+function toggleAuth() {
+    document.getElementById("loginForm").classList.toggle("hidden");
+    document.getElementById("registerForm").classList.toggle("hidden");
+}
+
+// ======================================================
+// AUTH TOAST NOTIFICATION
+// ======================================================
+function showAuthToast(message, type = "error") {
+    // Remove existing toast if any
+    const existing = document.getElementById("authToast");
+    if (existing) existing.remove();
+
+    const toast = document.createElement("div");
+    toast.id = "authToast";
+    toast.className = `auth-toast auth-toast--${type}`;
+    toast.innerHTML = `
+        <span class="auth-toast-icon">${type === "success" ? "\u2714" : "\u2716"}</span>
+        <span class="auth-toast-msg">${message}</span>
+    `;
+    document.body.appendChild(toast);
+
+    // Trigger animation
+    requestAnimationFrame(() => toast.classList.add("auth-toast--show"));
+
+    // Auto-dismiss after 2.8s
+    setTimeout(() => {
+        toast.classList.remove("auth-toast--show");
+        setTimeout(() => toast.remove(), 400);
+    }, 2800);
+}
+
+async function register() {
+    const username = document.getElementById("regUser").value;
+    const password = document.getElementById("regPass").value;
+    const res = await fetch(`${URL_API}/api/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (res.ok) {
+        showAuthToast(data.message, "success");
+        setTimeout(() => toggleAuth(), 1000);
+    } else {
+        showAuthToast(data.message, "error");
+    }
+}
+
+async function login() {
+    const username = document.getElementById("loginUser").value;
+    const password = document.getElementById("loginPass").value;
+    const res = await fetch(`${URL_API}/api/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (res.ok) {
+        currentUser = data.username;
+        localStorage.setItem("username", data.username);
+        initGameSession();
+    } else {
+        showAuthToast(data.message, "error");
+    }
+}
+
+function logout() {
+    bgm.pause();
+    bgm.currentTime = 0;
+    localStorage.removeItem("username");
+    location.reload();
+}
+
+// ══════════════════════════════════════════
+// GAME SESSION
+// ══════════════════════════════════════════
+
+const bgm = document.getElementById("bgm");
+
+function initGameSession() {
+    document.getElementById("authPage").classList.add("hidden");
+    document.getElementById("gamePage").classList.remove("hidden");
+
+    bgm.volume = 0.4;
+    bgm.play().catch(() => {});
+
+    const nameEl = document.getElementById("playerName");
+    if (nameEl) nameEl.textContent = (currentUser || "GUEST").toUpperCase();
+
+    // Load inventory & coins
+    loadInventory();
+    loadCoinsFromServer();
+    loadLeaderboard();
+    drawIdleScreen();
+}
+
+function startGame() {
+    document.getElementById("startScreen").classList.add("hidden");
+    resetGame();
+}
+
+// ══════════════════════════════════════════
+// INPUT
+// ══════════════════════════════════════════
+
+window.addEventListener("keydown", (e) => {
+    if (e.code === "Space" || e.code === "ArrowUp") {
+        e.preventDefault();
+        if (!gameRunning) {
+            const startScreen = document.getElementById("startScreen");
+            const gameOver    = document.getElementById("gameOverModal");
+            if (!startScreen.classList.contains("hidden")) {
+                startGame();
+            } else if (!gameOver.classList.contains("hidden")) {
+                resetGame();
+            }
+        } else {
+            birdFlap();
+        }
+    }
+});
+
+canvas.addEventListener("click", () => {
+    if (gameRunning) birdFlap();
+});
+
+function birdFlap() {
+    bird.velocity = bird.lift;
+    spawnFlapParticles();
+}
+
+// ══════════════════════════════════════════
+// PARTICLES — Flap
+// ══════════════════════════════════════════
+
+function spawnFlapParticles() {
+    for (let i = 0; i < 4; i++) {
+        particles.push({
+            x: bird.x + bird.width / 2,
+            y: bird.y + bird.height,
+            vx: (Math.random() - 0.5) * 3,
+            vy: Math.random() * 2 + 1,
+            life: 1,
+            decay: 0.08 + Math.random() * 0.06,
+            size: Math.random() * 4 + 2,
+            color: `hsl(${45 + Math.random() * 30}, 100%, 65%)`
+        });
+    }
+}
+
+function updateParticles() {
+    particles = particles.filter(p => p.life > 0);
+    particles.forEach(p => {
+        p.x += p.vx * dt; p.y += p.vy * dt;
+        p.life -= p.decay * dt;
+        p.size *= Math.pow(0.95, dt);
+    });
+}
+
+function drawParticles() {
+    particles.forEach(p => {
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+    });
+    ctx.globalAlpha = 1;
 }
 
 // ══════════════════════════════════════════
@@ -310,557 +440,705 @@ function getSkinData() {
 // ══════════════════════════════════════════
 
 function spawnTrailParticle() {
-    const trailData = TRAILS.find(t => t.id === currentTrail);
-    if (!trailData || trailData.id === 'none') return;
+    const trail = TRAILS.find(t => t.id === currentTrail);
+    if (!trail || trail.id === 'none') return;
 
-    let colors = trailData.colors;
-    if (trailData.id === 'rainbow') {
-        const t = Date.now() * 0.001;
-        colors = [
-            `hsl(${(t * 100) % 360}, 100%, 60%)`,
-            `hsl(${(t * 100 + 120) % 360}, 100%, 50%)`,
-            `hsl(${(t * 100 + 240) % 360}, 100%, 40%)`
-        ];
+    let color;
+    if (trail.id === 'rainbow') {
+        color = `hsl(${(frame * 10) % 360}, 100%, 65%)`;
+    } else {
+        color = trail.colors[Math.floor(Math.random() * trail.colors.length)];
     }
-    const color = colors[Math.floor(Math.random() * colors.length)];
+
+    const isStar = trail.id === 'star';
 
     trailParticles.push({
-        x: bird.x + bird.width / 2,
-        y: bird.y + bird.height / 2,
-        vx: (Math.random() - 0.5) * 1.5,
-        vy: (Math.random() - 0.5) * 1.5,
-        radius: Math.random() * 3 + 2,
-        alpha: 0.9,
-        color
+        x: bird.x + bird.width * 0.3,
+        y: bird.y + bird.height / 2 + (Math.random() - 0.5) * 8,
+        vx: -(1.5 + Math.random() * 1.5),
+        vy: (Math.random() - 0.5) * 1.2,
+        life: 1,
+        decay: 0.025 + Math.random() * 0.025,
+        size: Math.random() * 5 + 3,
+        color,
+        isStar
     });
 }
 
 function updateTrailParticles() {
-    for (let i = trailParticles.length - 1; i >= 0; i--) {
-        const p = trailParticles[i];
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.alpha -= 0.02 * dt;
-        p.radius -= 0.05 * dt;
-        if (p.alpha <= 0 || p.radius <= 0) trailParticles.splice(i, 1);
+    trailParticles = trailParticles.filter(p => p.life > 0);
+    trailParticles.forEach(p => {
+        p.x += p.vx * dt; p.y += p.vy * dt;
+        p.life -= p.decay * dt;
+        p.size *= Math.pow(0.97, dt);
+    });
+}
+
+function drawStarShape(cx, cy, spikes, outerR, innerR) {
+    let rot = -(Math.PI / 2);
+    const step = Math.PI / spikes;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(rot) * outerR, cy + Math.sin(rot) * outerR);
+    for (let i = 0; i < spikes; i++) {
+        rot += step;
+        ctx.lineTo(cx + Math.cos(rot) * innerR, cy + Math.sin(rot) * innerR);
+        rot += step;
+        ctx.lineTo(cx + Math.cos(rot) * outerR, cy + Math.sin(rot) * outerR);
     }
+    ctx.closePath();
 }
 
 function drawTrailParticles() {
     trailParticles.forEach(p => {
         ctx.save();
-        ctx.globalAlpha = p.alpha;
+        ctx.globalAlpha = p.life * 0.85;
         ctx.fillStyle = p.color;
         ctx.shadowBlur = 10;
         ctx.shadowColor = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fill();
+        if (p.isStar) {
+            drawStarShape(p.x, p.y, 4, p.size, p.size * 0.4);
+            ctx.fill();
+        } else {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    });
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+}
+
+// ══════════════════════════════════════════
+// ★ COMBO SYSTEM — Milestone texts & Fever
+// ══════════════════════════════════════════
+
+const COMBO_MILESTONES = {
+    5:  { text: 'GREAT!',    color: '#00f0ff', size: 22 },
+    10: { text: 'GREAT!!',   color: '#40ffff', size: 24 },
+    20: { text: 'AWESOME!',  color: '#6090ff', size: 26 },
+    30: { text: 'AWESOME!!', color: '#60a0ff', size: 28 },
+    40: { text: '🔥 FEVER!!',  color: '#ff7030', size: 28 },
+    50: { text: '🔥 MAX FEVER!!', color: '#ff2000', size: 30 },
+};
+
+function triggerComboMilestone(c) {
+    const m = COMBO_MILESTONES[c];
+    if (!m) return;
+    comboTexts.push({
+        text: m.text, color: m.color, size: m.size,
+        x: canvas.width / 2,
+        y: canvas.height / 2 - 50,
+        vy: -1.4,
+        life: 1,
+        decay: 0.016
+    });
+}
+
+function updateComboTexts() {
+    comboTexts = comboTexts.filter(t => t.life > 0);
+    comboTexts.forEach(t => { t.y += t.vy * dt; t.life -= t.decay * dt; });
+}
+
+function drawComboTexts() {
+    comboTexts.forEach(t => {
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, t.life * 2); // fade in fast, fade out slow
+        ctx.font = `900 ${t.size}px 'Orbitron', sans-serif`;
+        ctx.fillStyle = t.color;
+        ctx.shadowBlur = 28;
+        ctx.shadowColor = t.color;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        // Scale-in pop effect based on life near 1
+        const scale = t.life > 0.88 ? 0.5 + (1 - t.life) * (1 / 0.12) * 0.5 : 1;
+        ctx.translate(t.x, t.y);
+        ctx.scale(scale, scale);
+        ctx.fillText(t.text, 0, 0);
         ctx.restore();
     });
 }
 
-// ══════════════════════════════════════════
-// DRAW BIRD — dengan skin dinamis
-// ══════════════════════════════════════════
+function drawFeverEffect() {
+    if (combo < 20) return;
 
-function drawBird() {
-    const skinData = getSkinData();
-    const bodyColors = skinData.body;
+    const isFever2 = combo >= 50; // red tier
+    const tPulse   = Date.now() / 300;
+    const pulse    = 0.5 + 0.5 * Math.sin(tPulse * (isFever2 ? 4 : 2.5));
+
+    // ── Border glow ──────────────────────────────
+    let r, g, b;
+    if (isFever2) { r = 255; g = Math.floor(20 + 40 * pulse); b = 0; }
+    else          { r = 20;  g = Math.floor(80 + 80 * pulse); b = 255; }
+
+    const alpha  = 0.4 + 0.4 * pulse;
+    const borderW = 10 + 6 * pulse;
+    const blur    = 24 + 20 * pulse;
 
     ctx.save();
-    ctx.translate(bird.x + bird.width / 2, bird.y + bird.height / 2);
+    ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
+    ctx.lineWidth    = borderW;
+    ctx.shadowBlur   = blur;
+    ctx.shadowColor  = `rgba(${r},${g},${b},1)`;
+    ctx.strokeRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
 
-    const angle = Math.min(Math.max(bird.velocity * 0.05, -0.5), 0.5);
+    // ── Subtle full-canvas tint at top & bottom edges ──
+    ctx.save();
+    const edgeAlpha = 0.06 + 0.06 * pulse;
+    ['top', 'bottom'].forEach(side => {
+        const grad = ctx.createLinearGradient(
+            0, side === 'top' ? 0 : canvas.height,
+            0, side === 'top' ? canvas.height * 0.35 : canvas.height * 0.65
+        );
+        grad.addColorStop(0,   `rgba(${r},${g},${b},${edgeAlpha})`);
+        grad.addColorStop(1,   `rgba(${r},${g},${b},0)`);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    });
+    ctx.restore();
+}
+
+// ══════════════════════════════════════════
+// ★ POWERUP SYSTEM — Config & Functions
+// ══════════════════════════════════════════
+
+const POWERUP_CONFIG = {
+    shield: {
+        symbol:    '🛡️',
+        color:     '#00f0ff',
+        glowColor: 'rgba(0,240,255,0.9)',
+        bgColor:   'rgba(0,220,255,0.18)',
+        labelText: '🛡️ SHIELD!',
+        labelColor:'#00f0ff'
+    },
+    multiplier: {
+        symbol:    '×2',
+        color:     '#f5d000',
+        glowColor: 'rgba(245,208,0,0.9)',
+        bgColor:   'rgba(245,208,0,0.15)',
+        labelText: '×2 SCORE!',
+        labelColor:'#f5d000'
+    }
+};
+
+// Apply powerup effect when collected
+function applyPowerup(type) {
+    const cfg = POWERUP_CONFIG[type];
+    if (type === 'shield') {
+        shieldActive = true;
+        sfxShield.currentTime = 0;
+        sfxShield.play();
+    } else if (type === 'multiplier') {
+        multiplierActive = true;
+        multiplierTimer  = MULTIPLIER_DURATION;
+        sfxX2.currentTime = 0;
+        sfxX2.play();
+    }
+    // Push floating pickup text (reuses comboTexts system)
+    comboTexts.push({
+        text:  cfg.labelText,
+        color: cfg.labelColor,
+        size:  20,
+        x:     canvas.width / 2,
+        y:     canvas.height / 2 + 30,
+        vy:    -1.2,
+        life:  1,
+        decay: 0.014
+    });
+}
+
+// Draw powerup items floating in the gap
+function drawPowerups() {
+    powerups.forEach(p => {
+        if (p.collected) return;
+        const cfg = POWERUP_CONFIG[p.type];
+        const bob = Math.sin(Date.now() / 500 + p.bobOffset) * 5;
+        const px  = p.x, py = p.y + bob, r = p.size;
+        const pulse = 0.6 + 0.4 * Math.sin(Date.now() / 280 + p.bobOffset);
+
+        ctx.save();
+
+        // Outer pulsing ring
+        ctx.shadowBlur   = 18 * pulse;
+        ctx.shadowColor  = cfg.glowColor;
+        ctx.strokeStyle  = cfg.color;
+        ctx.lineWidth    = 2.5;
+        ctx.globalAlpha  = 0.85 + 0.15 * pulse;
+        ctx.beginPath();
+        ctx.arc(px, py, r + 4, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Second inner ring (shimmer)
+        ctx.strokeStyle  = cfg.color;
+        ctx.lineWidth    = 1;
+        ctx.globalAlpha  = 0.3 * pulse;
+        ctx.shadowBlur   = 0;
+        ctx.beginPath();
+        ctx.arc(px, py, r + 9, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Filled background circle
+        ctx.fillStyle   = cfg.bgColor;
+        ctx.globalAlpha = 1;
+        ctx.shadowBlur  = 12;
+        ctx.shadowColor = cfg.glowColor;
+        ctx.beginPath();
+        ctx.arc(px, py, r, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Symbol / text
+        ctx.shadowBlur = 14;
+        ctx.globalAlpha = 1;
+        if (p.type === 'multiplier') {
+            ctx.font         = `900 ${Math.round(r * 0.95)}px 'Orbitron', sans-serif`;
+            ctx.fillStyle    = cfg.color;
+            ctx.textAlign    = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('×2', px, py + 1);
+        } else {
+            ctx.font         = `${Math.round(r * 1.15)}px sans-serif`;
+            ctx.textAlign    = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(cfg.symbol, px, py + 1);
+        }
+
+        ctx.restore();
+    });
+}
+
+// Draw cyan shield bubble around bird (active or invincible blinking)
+function drawShieldEffect() {
+    if (!shieldActive && !shieldInvincible) return;
+
+    const bx    = bird.x + bird.width  / 2;
+    const by    = bird.y + bird.height / 2;
+    const r     = bird.width * 0.85 + 7;
+    const pulse = 0.65 + 0.35 * Math.sin(Date.now() / 180);
+
+    // Blinking during invincibility
+    if (shieldInvincible && Math.floor(Date.now() / 90) % 2 === 0) return;
+
+    ctx.save();
+    ctx.shadowBlur  = 22;
+    ctx.shadowColor = 'rgba(0,240,255,0.9)';
+    ctx.strokeStyle = shieldInvincible
+        ? `rgba(0,240,255,0.55)`
+        : `rgba(0,240,255,${pulse})`;
+    ctx.lineWidth   = shieldInvincible ? 2 : 3;
+    ctx.beginPath();
+    ctx.arc(bx, by, r, 0, Math.PI * 2);
+    ctx.stroke();
+
+    if (shieldActive) {
+        ctx.fillStyle = `rgba(0,240,255,${pulse * 0.12})`;
+        ctx.beginPath();
+        ctx.arc(bx, by, r, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+// Draw active powerup indicators (top-left corner of canvas)
+function drawPowerupHUD() {
+    if (!shieldActive && !shieldInvincible && !multiplierActive) return;
+
+    let hx = 8, hy = 8;
+
+    // ── Shield indicator ──
+    if (shieldActive || shieldInvincible) {
+        const blink = shieldInvincible && Math.floor(Date.now() / 220) % 2 === 0;
+        ctx.save();
+        ctx.globalAlpha = blink ? 0.25 : 1;
+        ctx.shadowBlur  = 10;
+        ctx.shadowColor = '#00f0ff';
+
+        ctx.fillStyle   = 'rgba(0,240,255,0.15)';
+        ctx.strokeStyle = '#00f0ff';
+        ctx.lineWidth   = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(hx, hy, 52, 22, 11);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.font          = '13px sans-serif';
+        ctx.textBaseline  = 'middle';
+        ctx.fillText('🛡️', hx + 4, hy + 11);
+
+        ctx.fillStyle     = '#00f0ff';
+        ctx.font          = `bold 8px 'Orbitron', sans-serif`;
+        ctx.fillText(shieldInvincible ? 'INV' : 'ON', hx + 26, hy + 11);
+
+        ctx.restore();
+        hx += 60;
+    }
+
+    // ── Multiplier indicator ──
+    if (multiplierActive) {
+        const secsLeft = Math.ceil(multiplierTimer / 60);
+        ctx.save();
+        ctx.shadowBlur  = 10;
+        ctx.shadowColor = 'rgba(245,208,0,0.8)';
+
+        ctx.fillStyle   = 'rgba(245,208,0,0.15)';
+        ctx.strokeStyle = '#f5d000';
+        ctx.lineWidth   = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(hx, hy, 58, 22, 11);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle     = '#f5d000';
+        ctx.font          = `bold 9px 'Orbitron', sans-serif`;
+        ctx.textBaseline  = 'middle';
+        ctx.textAlign     = 'left';
+        ctx.fillText(`×2  ${secsLeft}s`, hx + 7, hy + 11);
+
+        ctx.restore();
+    }
+}
+
+// ══════════════════════════════════════════
+// PIPE CREATION
+// ══════════════════════════════════════════
+
+function createPipe() {
+    let gap = 130;
+    let minPipeHeight = 60;
+    let pipeTopHeight = Math.random() * (canvas.height - gap - minPipeHeight * 2) + minPipeHeight;
+    pipes.push({ x: canvas.width, y: 0, width: 52, height: pipeTopHeight, type: 'top', scored: false });
+    pipes.push({ x: canvas.width, y: pipeTopHeight + gap, width: 52, height: canvas.height - pipeTopHeight - gap, type: 'bottom' });
+
+    // ── Powerup spawn: every 3rd pipe, 55% chance ──
+    pipeSpawnCount++;
+    if (pipeSpawnCount % 3 === 0 && Math.random() < 0.55) {
+        // Don't stack shield if already active
+        const available = [];
+        if (!shieldActive && !shieldInvincible) available.push('shield');
+        if (!multiplierActive)                  available.push('multiplier');
+        if (available.length === 0) return;
+
+        const type = available[Math.floor(Math.random() * available.length)];
+        powerups.push({
+            type,
+            x:          canvas.width + 26,        // horizontal centre of the pipe column
+            y:          pipeTopHeight + gap / 2,   // vertical centre of the gap
+            size:       16,
+            collected:  false,
+            bobOffset:  Math.random() * Math.PI * 2
+        });
+    }
+}
+
+// ══════════════════════════════════════════
+// UPDATE LOGIC
+// ══════════════════════════════════════════
+
+function update() {
+    if (!gameRunning) return;
+    bird.velocity += bird.gravity * dt;
+    bird.y        += bird.velocity * dt;
+
+    clouds.forEach(c => {
+        c.x -= c.speed * dt;
+        if (c.x + c.w < 0) c.x = canvas.width + 20;
+    });
+    stars.forEach(s => { s.twinkle += 0.05 * dt; });
+
+    // Pipe spawning: time-based so speed is identical at any refresh rate
+    pipeTimer -= dt;
+    if (pipeTimer <= 0) { createPipe(); pipeTimer = 90; }
+
+    pipes.forEach((pipe, index) => {
+        pipe.x -= 2.5 * dt;
+
+        const margin = 3;
+        if (bird.x + bird.width - margin > pipe.x &&
+            bird.x + margin < pipe.x + pipe.width &&
+            bird.y + bird.height - margin > pipe.y &&
+            bird.y + margin < pipe.y + pipe.height) {
+            if (shieldActive && !shieldInvincible) {
+                shieldActive          = false;
+                shieldInvincible      = true;
+                shieldInvincibleTimer = SHIELD_INVINCIBLE_DURATION;
+            } else if (!shieldInvincible) {
+                gameOver();
+            }
+        }
+
+        if (pipe.type === 'top' && !pipe.scored && pipe.x + pipe.width < bird.x) {
+            pipe.scored = true;
+            score += multiplierActive ? 2 : 1;
+            combo++;
+            triggerComboMilestone(combo);
+            sfxScore.currentTime = 0;
+            sfxScore.play();
+            updateLiveScore();
+        }
+
+        if (pipe.x + pipe.width < 0) pipes.splice(index, 1);
+    });
+
+    updateParticles();
+    updateTrailParticles();
+    updateComboTexts();
+    spawnTrailParticle();
+
+    // ── Shield invincibility countdown ──
+    if (shieldInvincible) {
+        shieldInvincibleTimer -= dt;
+        if (shieldInvincibleTimer <= 0) {
+            shieldInvincible      = false;
+            shieldInvincibleTimer = 0;
+        }
+    }
+
+    // ── Score multiplier countdown ──
+    if (multiplierActive) {
+        multiplierTimer -= dt;
+        if (multiplierTimer <= 0) {
+            multiplierActive = false;
+            multiplierTimer  = 0;
+        }
+    }
+
+    // ── Move powerups & collect ──
+    powerups.forEach(p => { p.x -= 2.5 * dt; });
+    powerups = powerups.filter(p => p.x + p.size > -10 && !p.collected);
+
+    powerups.forEach(p => {
+        const hitR = p.size + 8; // generous pickup radius
+        const dx   = (bird.x + bird.width / 2)  - p.x;
+        const dy   = (bird.y + bird.height / 2) - p.y;
+        if (Math.sqrt(dx * dx + dy * dy) < hitR) {
+            p.collected = true;
+            applyPowerup(p.type);
+        }
+    });
+
+    // ── Floor / ceiling ──
+    if (bird.y + bird.height > canvas.height || bird.y < 0) {
+        if (shieldActive && !shieldInvincible) {
+            shieldActive          = false;
+            shieldInvincible      = true;
+            shieldInvincibleTimer = SHIELD_INVINCIBLE_DURATION;
+            bird.velocity         = bird.lift * 0.5;
+            if (bird.y < 0)                              bird.y = 4;
+            else if (bird.y + bird.height > canvas.height) bird.y = canvas.height - bird.height - 4;
+        } else if (!shieldInvincible) {
+            gameOver();
+        }
+    }
+
+    frame += dt;
+}
+
+function updateLiveScore() {
+    const el = document.getElementById("liveScore");
+    if (el) {
+        el.textContent = score;
+        el.style.transform = "scale(1.3)";
+        el.style.transition = "transform 0.1s";
+        setTimeout(() => { el.style.transform = "scale(1)"; }, 150);
+    }
+}
+
+// ══════════════════════════════════════════
+// DRAW
+// ══════════════════════════════════════════
+
+function drawIdleScreen() {
+    drawBackground();
+    drawBird();
+}
+
+function draw() {
+    drawBackground();
+    drawTrailParticles();
+    drawPowerups();
+    drawPipes();
+    // Bird blinks during shield invincibility
+    if (shieldInvincible && Math.floor(Date.now() / 90) % 2 === 0) ctx.globalAlpha = 0.2;
+    drawBird();
+    ctx.globalAlpha = 1;
+    drawShieldEffect();
+    drawParticles();
+    drawFeverEffect();
+    drawComboTexts();
+    drawPowerupHUD();
+}
+
+function drawBackground() {
+    let skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    skyGrad.addColorStop(0, "#07091a");
+    skyGrad.addColorStop(0.6, "#0d1640");
+    skyGrad.addColorStop(0.85, "#1a3a2a");
+    skyGrad.addColorStop(1, "#0d2010");
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    stars.forEach(s => {
+        const a = s.alpha * (0.6 + 0.4 * Math.sin(s.twinkle));
+        ctx.fillStyle = `rgba(255,255,255,${a})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // Moon
+    ctx.fillStyle = "rgba(240,240,200,0.9)";
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = "rgba(240,240,150,0.5)";
+    ctx.beginPath();
+    ctx.arc(canvas.width - 50, 45, 18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#0d1640";
+    ctx.beginPath();
+    ctx.arc(canvas.width - 43, 40, 15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Clouds
+    clouds.forEach(c => {
+        ctx.fillStyle = "rgba(30,55,100,0.5)";
+        ctx.beginPath();
+        ctx.ellipse(c.x, c.y, c.w / 2, 14, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(c.x - c.w * 0.2, c.y + 5, c.w * 0.35, 11, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(c.x + c.w * 0.2, c.y + 4, c.w * 0.3, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // Ground glow
+    let groundGrad = ctx.createLinearGradient(0, canvas.height - 40, 0, canvas.height);
+    groundGrad.addColorStop(0, "rgba(57,255,20,0)");
+    groundGrad.addColorStop(1, "rgba(57,255,20,0.12)");
+    ctx.fillStyle = groundGrad;
+    ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
+
+    ctx.strokeStyle = "rgba(57,255,20,0.3)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height - 1);
+    ctx.lineTo(canvas.width, canvas.height - 1);
+    ctx.stroke();
+}
+
+function drawBird() {
+    const skin = getSkinData();
+    const bx = bird.x, by = bird.y, bw = bird.width, bh = bird.height;
+    const angle = Math.min(Math.max(bird.velocity * 0.05, -0.5), 0.8);
+
+    ctx.save();
+    ctx.translate(bx + bw / 2, by + bh / 2);
     ctx.rotate(angle);
 
-    // Glow effect
-    ctx.shadowBlur = 15;
-    ctx.shadowColor = skinData.glow;
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = skin.glow;
 
-    // Body (gradient)
-    const grad = ctx.createLinearGradient(0, -bird.height / 2, 0, bird.height / 2);
-    grad.addColorStop(0, bodyColors[0]);
-    grad.addColorStop(0.5, bodyColors[1]);
-    grad.addColorStop(1, bodyColors[2]);
-    ctx.fillStyle = grad;
+    // Body
+    let bodyGrad = ctx.createRadialGradient(-3, -3, 2, 0, 0, bw);
+    bodyGrad.addColorStop(0, skin.body[0]);
+    bodyGrad.addColorStop(0.6, skin.body[1]);
+    bodyGrad.addColorStop(1, skin.body[2]);
+    ctx.fillStyle = bodyGrad;
+    ctx.strokeStyle = skin.body[0] + '99';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.ellipse(0, 0, bird.width / 2, bird.height / 2, 0, 0, Math.PI * 2);
+    ctx.roundRect(-bw / 2, -bh / 2, bw, bh, 7);
     ctx.fill();
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
 
     // Wing
-    const wingFlap = Math.sin(Date.now() * 0.02) * 4;
-    ctx.fillStyle = skinData.wing;
+    ctx.fillStyle = skin.wing;
     ctx.beginPath();
-    ctx.ellipse(0, wingFlap, bird.width / 2.5, bird.height / 3, 0, 0, Math.PI * 2);
+    ctx.ellipse(-3, 4, 8, 5, -0.3, 0, Math.PI * 2);
     ctx.fill();
 
-    // Eye (white + black)
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = "#fff";
+    // Eye
+    ctx.fillStyle = "#001a40";
     ctx.beginPath();
-    ctx.arc(bird.width / 4, -bird.height / 6, 4, 0, Math.PI * 2);
+    ctx.arc(6, -4, 5, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "#000";
+    ctx.fillStyle = "white";
     ctx.beginPath();
-    ctx.arc(bird.width / 4 + 1, -bird.height / 6, 2, 0, Math.PI * 2);
+    ctx.arc(7, -5, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#001a40";
+    ctx.beginPath();
+    ctx.arc(7.5, -4.5, 1, 0, Math.PI * 2);
     ctx.fill();
 
     // Beak
-    ctx.fillStyle = skinData.beak;
+    ctx.fillStyle = skin.beak;
     ctx.beginPath();
-    ctx.moveTo(bird.width / 2, 0);
-    ctx.lineTo(bird.width / 2 + 6, -2);
-    ctx.lineTo(bird.width / 2 + 6, 2);
+    ctx.moveTo(bw / 2 - 2, -1);
+    ctx.lineTo(bw / 2 + 6, 1);
+    ctx.lineTo(bw / 2 - 2, 3);
     ctx.closePath();
     ctx.fill();
 
     ctx.restore();
 }
 
-// ══════════════════════════════════════════
-// DRAW PIPES (3D tube + shadows)
-// ══════════════════════════════════════════
-
-function drawPipe(x, y, w, h, isTop) {
-    // Main body gradient
-    const grad = ctx.createLinearGradient(x, 0, x + w, 0);
-    grad.addColorStop(0, "#1a8a44");
-    grad.addColorStop(0.5, "#2eb85c");
-    grad.addColorStop(1, "#1a8a44");
-    ctx.fillStyle = grad;
-    ctx.fillRect(x, y, w, h);
-
-    // Inner highlight (left side)
-    ctx.fillStyle = "rgba(100, 255, 150, 0.3)";
-    ctx.fillRect(x, y, w * 0.2, h);
-
-    // Shadow (right side)
-    ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
-    ctx.fillRect(x + w * 0.8, y, w * 0.2, h);
-
-    // Cap (rim)
-    const capY = isTop ? y + h - 8 : y;
-    const capH = 8;
-    const capW = w + 6;
-    const capX = x - 3;
-    ctx.fillStyle = "#16733a";
-    ctx.fillRect(capX, capY, capW, capH);
-
-    // Cap top face (3D effect)
-    const topGrad = ctx.createLinearGradient(capX, capY, capX + capW, capY);
-    topGrad.addColorStop(0, "#1a8a44");
-    topGrad.addColorStop(0.5, "#2eb85c");
-    topGrad.addColorStop(1, "#1a8a44");
-    ctx.fillStyle = topGrad;
-    ctx.fillRect(capX, isTop ? capY + capH : capY - 2, capW, 2);
-}
-
-// ══════════════════════════════════════════
-// ★ POWERUP SYSTEM — Shield & 2x Score
-// ══════════════════════════════════════════
-
-function spawnPowerup() {
-    const rand = Math.random();
-    let type;
-    if (rand < 0.5) {
-        type = 'shield';
-    } else {
-        type = '2x';
-    }
-    powerups.push({
-        x: canvas.width,
-        y: Math.random() * (canvas.height * 0.6) + 60,
-        width: 32,
-        height: 32,
-        speed: 2.5,
-        type: type,
-        collected: false,
-        glow: 0
-    });
-}
-
-function updatePowerups() {
-    for (let i = powerups.length - 1; i >= 0; i--) {
-        const p = powerups[i];
-        p.x -= p.speed * dt;
-        p.glow = (Math.sin(Date.now() * 0.008) + 1) * 0.5;
-
-        if (!p.collected) {
-            const birdCenterX = bird.x + bird.width / 2;
-            const birdCenterY = bird.y + bird.height / 2;
-            const pCenterX = p.x + p.width / 2;
-            const pCenterY = p.y + p.height / 2;
-            const dx = birdCenterX - pCenterX;
-            const dy = birdCenterY - pCenterY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-
-            if (dist < (bird.width / 2 + p.width / 2)) {
-                p.collected = true;
-                collectPowerup(p.type);
-                powerups.splice(i, 1);
-            }
-        }
-
-        if (p.x + p.width < 0) {
-            powerups.splice(i, 1);
-        }
-    }
-}
-
-function collectPowerup(type) {
-    if (type === 'shield') {
-        shieldActive = true;
-        shieldInvincible = true;
-        shieldInvincibleTimer = SHIELD_INVINCIBLE_DURATION;
-        sfxShield.currentTime = 0;
-        sfxShield.play();
-    } else if (type === '2x') {
-        multiplierActive = true;
-        multiplierTimer = MULTIPLIER_DURATION;
-        sfxX2.currentTime = 0;
-        sfxX2.play();
-    }
-}
-
-function updatePowerupTimers() {
-    if (shieldInvincible) {
-        shieldInvincibleTimer -= dt;
-        if (shieldInvincibleTimer <= 0) {
-            shieldInvincible = false;
-        }
-    }
-    if (multiplierActive) {
-        multiplierTimer -= dt;
-        if (multiplierTimer <= 0) {
-            multiplierActive = false;
-        }
-    }
-}
-
-function drawPowerups() {
-    powerups.forEach(p => {
-        ctx.save();
-        const centerX = p.x + p.width / 2;
-        const centerY = p.y + p.height / 2;
-
-        if (p.type === 'shield') {
-            ctx.shadowBlur = 20 * p.glow;
-            ctx.shadowColor = '#40e0ff';
-            ctx.fillStyle = '#40e0ff';
-            ctx.strokeStyle = '#00a0d0';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(centerX, centerY - p.height / 2);
-            ctx.lineTo(centerX + p.width / 2, centerY);
-            ctx.lineTo(centerX, centerY + p.height / 2);
-            ctx.lineTo(centerX - p.width / 2, centerY);
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-        } else if (p.type === '2x') {
-            ctx.shadowBlur = 20 * p.glow;
-            ctx.shadowColor = '#ffcc00';
-            ctx.fillStyle = '#ffcc00';
-            ctx.strokeStyle = '#ff8800';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, p.width / 2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-            ctx.fillStyle = '#000';
-            ctx.font = 'bold 14px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('2X', centerX, centerY);
-        }
-        ctx.restore();
-    });
-}
-
-function drawPowerupIndicators() {
-    const indicatorY = 10;
-    let offsetX = canvas.width - 120;
-
-    if (shieldActive) {
-        ctx.save();
-        ctx.fillStyle = '#40e0ff';
-        ctx.strokeStyle = '#00a0d0';
-        ctx.lineWidth = 2;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = '#40e0ff';
-        ctx.beginPath();
-        ctx.arc(offsetX, indicatorY, 12, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 10px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('🛡', offsetX, indicatorY);
-        ctx.restore();
-        offsetX += 35;
-    }
-
-    if (multiplierActive) {
-        ctx.save();
-        const timeLeft = Math.ceil(multiplierTimer / TARGET_FPS);
-        ctx.fillStyle = '#ffcc00';
-        ctx.strokeStyle = '#ff8800';
-        ctx.lineWidth = 2;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = '#ffcc00';
-        ctx.beginPath();
-        ctx.arc(offsetX, indicatorY, 12, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        ctx.fillStyle = '#000';
-        ctx.font = 'bold 9px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('2X', offsetX, indicatorY - 1);
-        ctx.fillStyle = '#fff';
-        ctx.font = '8px Arial';
-        ctx.fillText(timeLeft, offsetX, indicatorY + 8);
-        ctx.restore();
-    }
-}
-
-// ══════════════════════════════════════════
-// ★ COMBO SYSTEM
-// ══════════════════════════════════════════
-
-function addCombo() {
-    combo++;
-    if (combo === 5 || combo === 10 || combo === 20 || combo === 50) {
-        comboTexts.push({
-            text: `COMBO ${combo}x! 🔥`,
-            x: canvas.width / 2,
-            y: canvas.height / 3,
-            alpha: 1,
-            scale: 1.5,
-            vy: -1.5
-        });
-    }
-}
-
-function updateComboTexts() {
-    for (let i = comboTexts.length - 1; i >= 0; i--) {
-        const ct = comboTexts[i];
-        ct.y += ct.vy * dt;
-        ct.alpha -= 0.015 * dt;
-        ct.scale -= 0.01 * dt;
-        if (ct.alpha <= 0) comboTexts.splice(i, 1);
-    }
-}
-
-function drawComboTexts() {
-    comboTexts.forEach(ct => {
-        ctx.save();
-        ctx.globalAlpha = ct.alpha;
-        ctx.font = `bold ${20 * ct.scale}px 'Press Start 2P', monospace`;
-        ctx.fillStyle = '#ff3366';
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 3;
-        ctx.textAlign = 'center';
-        ctx.strokeText(ct.text, ct.x, ct.y);
-        ctx.fillText(ct.text, ct.x, ct.y);
-        ctx.restore();
-    });
-}
-
-// ══════════════════════════════════════════
-// UPDATE & DRAW
-// ══════════════════════════════════════════
-
-function update() {
-    if (!gameRunning) return;
-
-    bird.velocity += bird.gravity * dt;
-    bird.y += bird.velocity * dt;
-
-    pipeTimer += dt;
-    if (pipeTimer >= 90) {
-        const gap = 120;
-        const minY = 40;
-        const maxY = canvas.height - gap - 100;
-        const topH = Math.random() * (maxY - minY) + minY;
-        pipes.push({ x: canvas.width, y: 0, width: 50, height: topH, passed: false });
-        pipeTimer = 0;
-
-        pipeSpawnCount++;
-        if (pipeSpawnCount % 5 === 0) {
-            spawnPowerup();
-        }
-    }
-
-    for (let i = pipes.length - 1; i >= 0; i--) {
-        pipes[i].x -= 2.5 * dt;
-
-        if (!pipes[i].passed && pipes[i].x + pipes[i].width < bird.x) {
-            pipes[i].passed = true;
-            const points = multiplierActive ? 2 : 1;
-            score += points;
-            addCombo();
-            updateLiveScore();
-            sfxScore.currentTime = 0;
-            sfxScore.play();
-            spawnParticles(pipes[i].x + pipes[i].width, pipes[i].height + 60);
-        }
-
-        if (pipes[i].x + pipes[i].width < 0) {
-            pipes.splice(i, 1);
-        }
-    }
-
-    const birdCenterX = bird.x + bird.width / 2;
-    const birdCenterY = bird.y + bird.height / 2;
-    const birdRadius = bird.width / 2;
-
-    for (let pipe of pipes) {
-        const gap = 120;
-        const bottomY = pipe.height + gap;
-        const topRect = { x: pipe.x, y: 0, w: pipe.width, h: pipe.height };
-        const bottomRect = { x: pipe.x, y: bottomY, w: pipe.width, h: canvas.height - bottomY };
-
-        if (circleRectCollision(birdCenterX, birdCenterY, birdRadius, topRect) ||
-            circleRectCollision(birdCenterX, birdCenterY, birdRadius, bottomRect)) {
-            if (shieldActive && shieldInvincible) {
-                continue;
-            } else {
-                gameOver();
-                return;
-            }
-        }
-    }
-
-    if (bird.y + bird.height > canvas.height || bird.y < 0) {
-        if (!(shieldActive && shieldInvincible)) {
-            gameOver();
-            return;
-        }
-    }
-
-    for (let i = particles.length - 1; i >= 0; i--) {
-        particles[i].y += particles[i].vy * dt;
-        particles[i].alpha -= 0.02 * dt;
-        if (particles[i].alpha <= 0) particles[i].splice(i, 1);
-    }
-
-    for (let c of clouds) {
-        c.x -= c.speed * dt;
-        if (c.x + c.w < 0) c.x = canvas.width + c.w;
-    }
-
-    updatePowerups();
-    updatePowerupTimers();
-    updateComboTexts();
-
-    if (currentTrail !== 'none' && frame % 3 === 0) {
-        spawnTrailParticle();
-    }
-    updateTrailParticles();
-}
-
-function circleRectCollision(cx, cy, r, rect) {
-    const closestX = Math.max(rect.x, Math.min(cx, rect.x + rect.w));
-    const closestY = Math.max(rect.y, Math.min(cy, rect.y + rect.h));
-    const dx = cx - closestX;
-    const dy = cy - closestY;
-    return (dx * dx + dy * dy) < (r * r);
-}
-
-function spawnParticles(x, y) {
-    for (let i = 0; i < 8; i++) {
-        particles.push({
-            x: x,
-            y: y,
-            vy: (Math.random() - 0.5) * 3,
-            alpha: 1,
-            color: `hsl(${Math.random() * 60 + 30}, 100%, 60%)`
-        });
-    }
-}
-
-function draw() {
-    ctx.fillStyle = "#0a0e27";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    for (let s of stars) {
-        s.twinkle += 0.05;
-        const twinkleAlpha = s.alpha + Math.sin(s.twinkle) * 0.3;
-        ctx.fillStyle = `rgba(255,255,255,${Math.max(0, twinkleAlpha)})`;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    for (let c of clouds) {
-        ctx.fillStyle = "rgba(255,255,255,0.05)";
-        ctx.beginPath();
-        ctx.arc(c.x, c.y, c.w * 0.3, 0, Math.PI * 2);
-        ctx.arc(c.x + c.w * 0.3, c.y - 5, c.w * 0.25, 0, Math.PI * 2);
-        ctx.arc(c.x + c.w * 0.6, c.y, c.w * 0.35, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    drawTrailParticles();
-
+function drawPipes() {
     pipes.forEach(pipe => {
-        const gap = 120;
-        drawPipe(pipe.x, 0, pipe.width, pipe.height, true);
-        drawPipe(pipe.x, pipe.height + gap, pipe.width, canvas.height - (pipe.height + gap), false);
-    });
+        const pw = pipe.pw || pipe.width;
 
-    drawPowerups();
-    drawBird();
+        let pipeGrad = ctx.createLinearGradient(pipe.x, 0, pipe.x + pw, 0);
+        pipeGrad.addColorStop(0, "#0d3320");
+        pipeGrad.addColorStop(0.2, "#27ae60");
+        pipeGrad.addColorStop(0.5, "#2ecc71");
+        pipeGrad.addColorStop(0.8, "#27ae60");
+        pipeGrad.addColorStop(1, "#0d3320");
+        ctx.fillStyle = pipeGrad;
+        ctx.fillRect(pipe.x, pipe.y, pipe.width, pipe.height);
 
-    particles.forEach(p => {
-        ctx.fillStyle = p.color;
-        ctx.globalAlpha = p.alpha;
-        ctx.fillRect(p.x, p.y, 4, 4);
-    });
-    ctx.globalAlpha = 1;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "rgba(57,255,20,0.4)";
+        ctx.strokeStyle = "rgba(57,255,20,0.5)";
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(pipe.x, pipe.y, pipe.width, pipe.height);
+        ctx.shadowBlur = 0;
 
-    drawComboTexts();
-    drawPowerupIndicators();
-}
+        const capH = 20, capW = pipe.width + 8, capX = pipe.x - 4;
+        let capY = pipe.type === 'top' ? pipe.height - capH : pipe.y;
 
-function drawIdleScreen() {
-    ctx.fillStyle = "#0a0e27";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    for (let s of stars) {
-        s.twinkle += 0.05;
-        const twinkleAlpha = s.alpha + Math.sin(s.twinkle) * 0.3;
-        ctx.fillStyle = `rgba(255,255,255,${Math.max(0, twinkleAlpha)})`;
+        let capGrad = ctx.createLinearGradient(capX, 0, capX + capW, 0);
+        capGrad.addColorStop(0, "#0a2e14");
+        capGrad.addColorStop(0.3, "#2ecc71");
+        capGrad.addColorStop(0.7, "#2ecc71");
+        capGrad.addColorStop(1, "#0a2e14");
+        ctx.fillStyle = capGrad;
         ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.roundRect(capX, capY, capW, capH, 4);
         ctx.fill();
-    }
-    for (let c of clouds) {
-        ctx.fillStyle = "rgba(255,255,255,0.05)";
+        ctx.strokeStyle = "rgba(57,255,20,0.6)";
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc(c.x, c.y, c.w * 0.3, 0, Math.PI * 2);
-        ctx.arc(c.x + c.w * 0.3, c.y - 5, c.w * 0.25, 0, Math.PI * 2);
-        ctx.arc(c.x + c.w * 0.6, c.y, c.w * 0.35, 0, Math.PI * 2);
-        ctx.fill();
-    }
-    bird.y = 200 + Math.sin(Date.now() * 0.002) * 10;
-    drawBird();
+        ctx.roundRect(capX, capY, capW, capH, 4);
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(255,255,255,0.07)";
+        ctx.fillRect(pipe.x + 8, pipe.y, 6, pipe.height);
+    });
 }
 
 // ══════════════════════════════════════════
-// GAME LOOP (deltaTime-aware)
+// GAME LOOP
 // ══════════════════════════════════════════
 
 function loop(timestamp) {
+    // Compute global dt (normalised: 1.0 = one 60fps frame)
     if (!lastTime) lastTime = timestamp;
-    const elapsed = timestamp - lastTime;
+    dt = (timestamp - lastTime) / (1000 / TARGET_FPS);
+    if (dt > 3) dt = 3; // cap to avoid giant jumps after tab-switch
     lastTime = timestamp;
-
-    dt = Math.min(elapsed / (1000 / TARGET_FPS), 2);
-
-    frame++;
 
     update();
     draw();
@@ -995,35 +1273,8 @@ function switchTab(tab) {
 }
 
 function renderShopItems(tab) {
-    const container = document.getElementById('shopItems');
-
-    // ★ TAB GACHA
-    if (tab === 'gacha') {
-        container.innerHTML = GACHA_BOXES.map((box, idx) => {
-            const canAfford = userCoins >= box.price;
-            const btnClass = 'shop-btn buy' + (!canAfford ? ' disabled' : '');
-            const btnText = `🪙 ${box.price}`;
-
-            return `
-                <div class="shop-item gacha-box-item" style="animation-delay:${idx * 0.04}s">
-                    <div class="gacha-box-emoji">${box.emoji}</div>
-                    <div class="shop-item-name">${box.name}</div>
-                    <p class="gacha-box-desc">${box.description}</p>
-                    <button class="${btnClass}" onclick="handleGachaClick('${box.id}')">${btnText}</button>
-                </div>
-            `;
-        }).join('');
-
-        // Update active tabs
-        document.getElementById('tabSkins').classList.remove('active');
-        document.getElementById('tabTrails').classList.remove('active');
-        document.getElementById('tabGacha').classList.add('active');
-        updateCoinDisplay();
-        return;
-    }
-
-    // ★ TAB SKINS / TRAILS (existing logic)
     const items = tab === 'skins' ? SKINS : TRAILS;
+    const container = document.getElementById('shopItems');
 
     container.innerHTML = items.map((item, idx) => {
         const owned    = ownedItems.includes(item.id);
@@ -1059,7 +1310,6 @@ function renderShopItems(tab) {
 
     document.getElementById('tabSkins').classList.toggle('active', tab === 'skins');
     document.getElementById('tabTrails').classList.toggle('active', tab === 'trails');
-    document.getElementById('tabGacha').classList.remove('active');
     updateCoinDisplay();
 }
 
@@ -1085,31 +1335,6 @@ async function handleShopClick(itemId, type) {
     saveInventory();
     equipItem(itemId, type);
     showShopMessage(`${item.emoji} ${item.name} berhasil dibeli!`, 'success');
-}
-
-// ★ GACHA BOX HANDLER
-async function handleGachaClick(boxId) {
-    const box = GACHA_BOXES.find(b => b.id === boxId);
-    if (!box) return;
-
-    if (userCoins < box.price) {
-        showShopMessage('Koin tidak cukup! 😢', 'error');
-        return;
-    }
-
-    // Deduct koin
-    await deductCoinsOnServer(box.price);
-
-    // ★ GACHA LOGIC (sementara belum ada reward)
-    // Nanti bisa ditambahkan random reward dari GACHA_REWARDS
-    
-    showShopMessage(`🎁 ${box.name} berhasil dibuka! (Reward coming soon)`, 'success');
-    
-    // TODO: Implementasi gacha reward system di sini
-    // Contoh:
-    // const reward = getRandomReward();
-    // giveRewardToPlayer(reward);
-    // showGachaRewardAnimation(reward);
 }
 
 function equipItem(itemId, type) {
@@ -1140,91 +1365,3 @@ function showShopMessage(msg, type) {
 // ══════════════════════════════════════════
 
 if (currentUser) initGameSession();
-
-// ══════════════════════════════════════════
-// AUTH
-// ══════════════════════════════════════════
-
-function toggleAuth() {
-    document.getElementById("loginForm").classList.toggle("hidden");
-    document.getElementById("registerForm").classList.toggle("hidden");
-}
-
-async function register() {
-    const username = document.getElementById("regUser").value.trim();
-    const password = document.getElementById("regPass").value.trim();
-    if (!username || !password) return alert("Isi semua field!");
-
-    try {
-        const res = await fetch(`${URL_API}/api/register`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, password })
-        });
-        const data = await res.json();
-        if (res.ok) {
-            alert("✅ " + data.message);
-            toggleAuth();
-        } else {
-            alert("❌ " + data.message);
-        }
-    } catch (error) {
-        alert("❌ Error koneksi server");
-    }
-}
-
-async function login() {
-    const username = document.getElementById("loginUser").value.trim();
-    const password = document.getElementById("loginPass").value.trim();
-    if (!username || !password) return alert("Isi semua field!");
-
-    try {
-        const res = await fetch(`${URL_API}/api/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, password })
-        });
-        const data = await res.json();
-        if (res.ok) {
-            currentUser = data.username;
-            localStorage.setItem("username", currentUser);
-            initGameSession();
-        } else {
-            alert("❌ " + data.message);
-        }
-    } catch (error) {
-        alert("❌ Error koneksi server");
-    }
-}
-
-function logout() {
-    currentUser = null;
-    localStorage.removeItem("username");
-    document.getElementById("gamePage").classList.add("hidden");
-    document.getElementById("authPage").classList.remove("hidden");
-    gameRunning = false;
-}
-
-function initGameSession() {
-    document.getElementById("authPage").classList.add("hidden");
-    document.getElementById("gamePage").classList.remove("hidden");
-    document.getElementById("playerName").innerText = currentUser.toUpperCase();
-    loadCoinsFromServer();
-    loadInventory();
-    loadLeaderboard();
-    updateLiveScore();
-
-    setInterval(drawIdleScreen, 50);
-}
-
-function updateLiveScore() {
-    document.getElementById("liveScore").innerText = score;
-}
-
-function startGame() {
-    document.getElementById("startScreen").classList.add("hidden");
-    gameRunning = true;
-    lastTime = 0;
-    pipeTimer = 90;
-    requestAnimationFrame(loop);
-}
