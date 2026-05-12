@@ -1,3 +1,4 @@
+const path = require('path'); // Tambahkan baris ini!
 const express = require('express');
 const { Sequelize, DataTypes } = require('sequelize');
 const cors = require('cors');
