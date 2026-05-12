@@ -100,7 +100,7 @@ let trailParticles = [];
 const TARGET_FPS = 60;    // target frame rate
 let   dt         = 1;     // global delta time (1.0 = one 60fps frame)
 let   lastTime   = 0;     // last rAF timestamp
-let   pipeTimer  = 90;    // start at 90 so first pipe spawns immediately
+let   pipeTimer  = 0;    // start at 90 so first pipe spawns immediately
 
 // ══════════════════════════════════════════
 // ★ COMBO SYSTEM STATE
