@@ -840,7 +840,7 @@ function drawPowerupHUD() {
 // ══════════════════════════════════════════
 
 function createPipe() {
-    let gap = 130;
+    let gap = 140;
     let minPipeHeight = 60;
     let pipeTopHeight = Math.random() * (canvas.height - gap - minPipeHeight * 2) + minPipeHeight;
     pipes.push({ x: canvas.width, y: 0, width: 52, height: pipeTopHeight, type: 'top', scored: false });
