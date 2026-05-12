@@ -348,10 +348,9 @@ window.addEventListener("keydown", (e) => {
     }
 });
 
-canvas.addEventListener('touchstart', function(e) {
-    if (e.cancelable) e.preventDefault(); // Cek dulu apakah bisa dicegah
-    lompat(); 
-}, { passive: false }); // PENTING: Tambahkan { passive: false }
+canvas.addEventListener("click", () => {
+    if (gameRunning) birdFlap();
+});
 
 function birdFlap() {
     bird.velocity = bird.lift;
