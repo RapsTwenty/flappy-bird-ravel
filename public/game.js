@@ -349,15 +349,26 @@ window.addEventListener("keydown", (e) => {
 });
 
 canvas.addEventListener('touchstart', function(e) {
-    e.preventDefault(); // Mencegah scrolling saat main
+    if (e.cancelable) e.preventDefault(); // Cek dulu apakah bisa dicegah
     lompat(); 
-}, false);
+}, { passive: false }); // PENTING: Tambahkan { passive: false }
 
 function birdFlap() {
     bird.velocity = bird.lift;
     spawnFlapParticles();
 }
 
+// Fungsi lompat yang sama digunakan untuk klik dan sentuh
+function handleInput(e) {
+    if (e.cancelable) e.preventDefault();
+    lompat(); // Panggil fungsi lompat kamu
+}
+
+// Support klik mouse (Laptop)
+canvas.addEventListener('mousedown', handleInput);
+
+// Support sentuhan jari (HP)
+canvas.addEventListener('touchstart', handleInput, { passive: false });
 // ══════════════════════════════════════════
 // PARTICLES — Flap
 // ══════════════════════════════════════════
