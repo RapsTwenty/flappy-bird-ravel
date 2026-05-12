@@ -142,7 +142,7 @@ for (let i = 0; i < 4; i++) {
 
 async function loadCoinsFromServer() {
     try {
-        const res = await fetch(`${URL_API}/user/${currentUser}/coins`);
+        const res = await fetch(`${URL_API}/api/user/${currentUser}/coins`);
         if (!res.ok) throw new Error('Server error');
         const data = await res.json();
         userCoins = data.coins || 0;
@@ -156,7 +156,7 @@ async function loadCoinsFromServer() {
 async function addCoinsToServer(amount) {
     if (!amount || amount <= 0) return;
     try {
-        const res = await fetch(`${URL_API}/user/coins/add`, {
+        const res = await fetch(`${URL_API}/api/user/coins/add`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: currentUser, amount })
@@ -174,7 +174,7 @@ async function addCoinsToServer(amount) {
 
 async function deductCoinsOnServer(amount) {
     try {
-        const res = await fetch(`${URL_API}/user/coins/add`, {
+        const res = await fetch(`${URL_API}/api/user/coins/add`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: currentUser, amount: -amount })
@@ -1144,7 +1144,7 @@ function gameOver() {
 
 async function submitScoreAuto() {
     try {
-        await fetch(`${URL_API}/score`, {
+        await fetch(`${URL_API}/api/score`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: currentUser, score: score })
@@ -1179,7 +1179,7 @@ const MEDALS = ["🥇", "🥈", "🥉"];
 
 async function loadLeaderboard() {
     try {
-        const res = await fetch(`${URL_API}/leaderboard`);
+        const res = await fetch(`${URL_API}/api/leaderboard`);
         const data = await res.json();
 
         const best = {};
