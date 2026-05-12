@@ -95,6 +95,13 @@ let particles    = [];
 let trailParticles = [];
 
 // ══════════════════════════════════════════
+// ★ DELTA TIME — frame-rate independent physics
+// ══════════════════════════════════════════
+const TARGET_FPS = 60;
+let lastTime     = 0;   // last requestAnimationFrame timestamp
+let pipeTimer    = 0;   // replaces frame % 90 for pipe spawning
+
+// ══════════════════════════════════════════
 // ★ COMBO SYSTEM STATE
 // ══════════════════════════════════════════
 let combo       = 0;
@@ -379,9 +386,9 @@ function spawnFlapParticles() {
 function updateParticles() {
     particles = particles.filter(p => p.life > 0);
     particles.forEach(p => {
-        p.x += p.vx; p.y += p.vy;
-        p.life -= p.decay;
-        p.size *= 0.95;
+        p.x += p.vx * dt; p.y += p.vy * dt;
+        p.life -= p.decay * dt;
+        p.size *= Math.pow(0.95, dt);
     });
 }
 
@@ -429,9 +436,9 @@ function spawnTrailParticle() {
 function updateTrailParticles() {
     trailParticles = trailParticles.filter(p => p.life > 0);
     trailParticles.forEach(p => {
-        p.x += p.vx; p.y += p.vy;
-        p.life -= p.decay;
-        p.size *= 0.97;
+        p.x += p.vx * dt; p.y += p.vy * dt;
+        p.life -= p.decay * dt;
+        p.size *= Math.pow(0.97, dt);
     });
 }
 
@@ -498,7 +505,7 @@ function triggerComboMilestone(c) {
 
 function updateComboTexts() {
     comboTexts = comboTexts.filter(t => t.life > 0);
-    comboTexts.forEach(t => { t.y += t.vy; t.life -= t.decay; });
+    comboTexts.forEach(t => { t.y += t.vy * dt; t.life -= t.decay * dt; });
 }
 
 function drawComboTexts() {
@@ -795,21 +802,22 @@ function createPipe() {
 // UPDATE LOGIC
 // ══════════════════════════════════════════
 
-function update() {
+function update(dt) {
     if (!gameRunning) return;
-    bird.velocity += bird.gravity;
-    bird.y += bird.velocity;
+    bird.velocity += bird.gravity * dt;
+    bird.y += bird.velocity * dt;
 
     clouds.forEach(c => {
-        c.x -= c.speed;
+        c.x -= c.speed * dt;
         if (c.x + c.w < 0) c.x = canvas.width + 20;
     });
-    stars.forEach(s => { s.twinkle += 0.05; });
+    stars.forEach(s => { s.twinkle += 0.05 * dt; });
 
-    if (frame % 90 === 0) createPipe();
+    pipeTimer += dt;
+    if (pipeTimer >= 90) { createPipe(); pipeTimer -= 90; }
 
     pipes.forEach((pipe, index) => {
-        pipe.x -= 2.5;
+        pipe.x -= 2.5 * dt;
 
         const margin = 3;
         if (bird.x + bird.width - margin > pipe.x &&
@@ -845,7 +853,7 @@ function update() {
 
     // ── Shield invincibility countdown ──
     if (shieldInvincible) {
-        shieldInvincibleTimer--;
+        shieldInvincibleTimer -= dt;
         if (shieldInvincibleTimer <= 0) {
             shieldInvincible      = false;
             shieldInvincibleTimer = 0;
@@ -854,7 +862,7 @@ function update() {
 
     // ── Score multiplier countdown ──
     if (multiplierActive) {
-        multiplierTimer--;
+        multiplierTimer -= dt;
         if (multiplierTimer <= 0) {
             multiplierActive = false;
             multiplierTimer  = 0;
@@ -862,7 +870,7 @@ function update() {
     }
 
     // ── Move powerups & collect ──
-    powerups.forEach(p => { p.x -= 2.5; });
+    powerups.forEach(p => { p.x -= 2.5 * dt; });
     powerups = powerups.filter(p => p.x + p.size > -10 && !p.collected);
 
     powerups.forEach(p => {
@@ -889,7 +897,7 @@ function update() {
         }
     }
 
-    frame++;
+    frame += dt;
 }
 
 function updateLiveScore() {
@@ -1092,8 +1100,14 @@ function drawPipes() {
 // GAME LOOP
 // ══════════════════════════════════════════
 
-function loop() {
-    update();
+function loop(timestamp) {
+    // Delta time: normalised so 1.0 = one frame at 60 fps
+    if (!lastTime) lastTime = timestamp;
+    let dt = (timestamp - lastTime) / (1000 / TARGET_FPS);
+    dt = Math.min(dt, 3); // cap: prevents huge jumps if tab was backgrounded
+    lastTime = timestamp;
+
+    update(dt);
     draw();
     if (gameRunning) requestAnimationFrame(loop);
 }
@@ -1166,9 +1180,11 @@ function resetGame() {
     multiplierActive      = false;
     multiplierTimer       = 0;
     gameRunning = true;
+    lastTime = 0;
+    pipeTimer = 0;
     document.getElementById("gameOverModal").classList.add("hidden");
     updateLiveScore();
-    loop();
+    requestAnimationFrame(loop);
 }
 
 // ══════════════════════════════════════════
