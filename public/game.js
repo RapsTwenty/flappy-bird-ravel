@@ -72,13 +72,36 @@ const GACHA_ITEMS = [
 ];
 
 // ══════════════════════════════════════════
+// ★ ACCESSORIES — Hats & Glasses
+// ══════════════════════════════════════════
+
+const HATS = [
+    { id: 'hat_none',    name: 'Tanpa Topi',  price: 0,   emoji: '🚫', drawEmoji: null,  drawSize: 0  },
+    { id: 'hat_tophat',  name: 'Top Hat',     price: 100, emoji: '🎩', drawEmoji: '🎩',  drawSize: 20 },
+    { id: 'hat_crown',   name: 'Mahkota',     price: 200, emoji: '👑', drawEmoji: '👑',  drawSize: 18 },
+    { id: 'hat_grad',    name: 'Toga',        price: 150, emoji: '🎓', drawEmoji: '🎓',  drawSize: 20 },
+    { id: 'hat_helmet',  name: 'Helm',        price: 175, emoji: '🪖', drawEmoji: '🪖',  drawSize: 20 },
+    { id: 'hat_santa',   name: 'Santa',       price: 250, emoji: '🎅', drawEmoji: '🎅',  drawSize: 20 },
+];
+
+const GLASSES = [
+    { id: 'glasses_none',     name: 'Tanpa Kacamata', price: 0,   emoji: '🚫',  drawEmoji: null,  drawSize: 0  },
+    { id: 'glasses_sunglasses', name: 'Sunglasses',   price: 100, emoji: '🕶️', drawEmoji: '🕶️', drawSize: 14 },
+    { id: 'glasses_nerd',     name: 'Kacamata Nerd',  price: 150, emoji: '👓',  drawEmoji: '👓',  drawSize: 13 },
+    { id: 'glasses_goggles',  name: 'Goggles',        price: 200, emoji: '🥽',  drawEmoji: '🥽',  drawSize: 13 },
+    { id: 'glasses_monocle',  name: 'Monokel',        price: 250, emoji: '🧐',  drawEmoji: '🧐',  drawSize: 14 },
+];
+
+// ══════════════════════════════════════════
 // ★ SHOP STATE
 // ══════════════════════════════════════════
 
 let userCoins    = 0;
-let ownedItems   = ['default', 'none'];  // IDs yang sudah dimiliki
+let ownedItems   = ['default', 'none', 'hat_none', 'glasses_none'];  // IDs yang sudah dimiliki
 let currentSkin  = 'default';
 let currentTrail = 'none';
+let currentHat     = 'hat_none';
+let currentGlasses = 'glasses_none';
 let shopCurrentTab = 'skins';
 
 // ══════════════════════════════════════════
@@ -222,22 +245,28 @@ function updateCoinDisplay(animate = false) {
 function loadInventory() {
     try {
         const raw = localStorage.getItem(`owned_${currentUser}`);
-        ownedItems = raw ? JSON.parse(raw) : ['default', 'none'];
+        ownedItems = raw ? JSON.parse(raw) : ['default', 'none', 'hat_none', 'glasses_none'];
     } catch {
-        ownedItems = ['default', 'none'];
+        ownedItems = ['default', 'none', 'hat_none', 'glasses_none'];
     }
     // Pastikan item gratis selalu dimiliki
-    if (!ownedItems.includes('default')) ownedItems.push('default');
-    if (!ownedItems.includes('none'))    ownedItems.push('none');
+    if (!ownedItems.includes('default'))       ownedItems.push('default');
+    if (!ownedItems.includes('none'))          ownedItems.push('none');
+    if (!ownedItems.includes('hat_none'))      ownedItems.push('hat_none');
+    if (!ownedItems.includes('glasses_none'))  ownedItems.push('glasses_none');
 
-    currentSkin  = localStorage.getItem(`skin_${currentUser}`)  || 'default';
-    currentTrail = localStorage.getItem(`trail_${currentUser}`) || 'none';
+    currentSkin    = localStorage.getItem(`skin_${currentUser}`)    || 'default';
+    currentTrail   = localStorage.getItem(`trail_${currentUser}`)   || 'none';
+    currentHat     = localStorage.getItem(`hat_${currentUser}`)     || 'hat_none';
+    currentGlasses = localStorage.getItem(`glasses_${currentUser}`) || 'glasses_none';
 }
 
 function saveInventory() {
     localStorage.setItem(`owned_${currentUser}`, JSON.stringify(ownedItems));
-    localStorage.setItem(`skin_${currentUser}`, currentSkin);
-    localStorage.setItem(`trail_${currentUser}`, currentTrail);
+    localStorage.setItem(`skin_${currentUser}`,    currentSkin);
+    localStorage.setItem(`trail_${currentUser}`,   currentTrail);
+    localStorage.setItem(`hat_${currentUser}`,     currentHat);
+    localStorage.setItem(`glasses_${currentUser}`, currentGlasses);
 }
 
 // ══════════════════════════════════════════
@@ -1086,6 +1115,32 @@ function drawBird() {
     ctx.closePath();
     ctx.fill();
 
+    // ── AKSESORI: Kacamata (di depan mata) ──
+    const glassesItem = GLASSES.find(g => g.id === currentGlasses);
+    if (glassesItem && glassesItem.drawEmoji) {
+        ctx.save();
+        ctx.shadowBlur   = 0;
+        ctx.globalAlpha  = 1;
+        ctx.font         = `${glassesItem.drawSize}px sans-serif`;
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(glassesItem.drawEmoji, 6, -3);
+        ctx.restore();
+    }
+
+    // ── AKSESORI: Topi (di atas kepala) ──
+    const hatItem = HATS.find(h => h.id === currentHat);
+    if (hatItem && hatItem.drawEmoji) {
+        ctx.save();
+        ctx.shadowBlur   = 0;
+        ctx.globalAlpha  = 1;
+        ctx.font         = `${hatItem.drawSize}px sans-serif`;
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(hatItem.drawEmoji, 2, -bh / 2 + 3);
+        ctx.restore();
+    }
+
     ctx.restore();
 }
 
@@ -1279,9 +1334,62 @@ function renderShopItems(tab) {
     let items;
     if (tab === 'skins') items = SKINS;
     else if (tab === 'trails') items = TRAILS;
-    else items = GACHA_ITEMS; // Mengambil data Gacha
+    else if (tab === 'accessories') items = null; // handled separately below
+    else items = GACHA_ITEMS;
 
     const container = document.getElementById('shopItems');
+
+    // ── ACCESSORIES tab: tampilkan Hats + Glasses dalam dua seksi ──
+    if (tab === 'accessories') {
+        const renderAccSection = (list, accType, currentEquipped) => list.map((item, idx) => {
+            const owned    = ownedItems.includes(item.id);
+            const equipped = currentEquipped === item.id;
+            const canAfford = userCoins >= item.price;
+
+            let btnClass, btnText;
+            if (equipped) {
+                btnClass = 'shop-btn equipped';
+                btnText  = '✓ DIPAKAI';
+            } else if (owned) {
+                btnClass = 'shop-btn equip';
+                btnText  = 'PAKAI';
+            } else {
+                btnClass = 'shop-btn buy' + (!canAfford ? ' disabled' : '');
+                btnText  = item.price === 0 ? 'FREE' : `🪙 ${item.price}`;
+            }
+
+            const cardClass = [
+                'shop-item',
+                equipped ? 'shop-item-equipped' : '',
+                !owned && !canAfford && item.price > 0 ? 'cant-afford' : ''
+            ].join(' ').trim();
+
+            return `
+                <div class="${cardClass}" style="animation-delay:${idx * 0.04}s">
+                    <div class="shop-item-emoji">${item.emoji}</div>
+                    <div class="shop-item-name">${item.name}</div>
+                    <button class="${btnClass}" onclick="handleShopClick('${item.id}','${accType}')">${btnText}</button>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = `
+            <div class="acc-section-label">🎩 Topi</div>
+            ${renderAccSection(HATS, 'hat', currentHat)}
+            <div class="acc-section-label">👓 Kacamata</div>
+            ${renderAccSection(GLASSES, 'glasses', currentGlasses)}
+        `;
+
+        // Tab active state
+        document.getElementById('tabSkins').classList.toggle('active', false);
+        document.getElementById('tabTrails').classList.toggle('active', false);
+        const tabGacha = document.getElementById('tabGacha');
+        if (tabGacha) tabGacha.classList.toggle('active', false);
+        const tabAcc = document.getElementById('tabAcc');
+        if (tabAcc) tabAcc.classList.toggle('active', true);
+        updateCoinDisplay();
+        return;
+    }
 
     container.innerHTML = items.map((item, idx) => {
         const canAfford = userCoins >= item.price;
@@ -1300,7 +1408,7 @@ function renderShopItems(tab) {
                 </div>
             `;
         } 
-        // LOGIKA UNTUK SKINS & TRAILS (Tetap sama seperti aslinya)
+        // LOGIKA UNTUK SKINS & TRAILS
         else {
             const owned    = ownedItems.includes(item.id);
             const equipped = tab === 'skins' ? currentSkin === item.id : currentTrail === item.id;
@@ -1338,12 +1446,14 @@ function renderShopItems(tab) {
     document.getElementById('tabTrails').classList.toggle('active', tab === 'trails');
     const tabGacha = document.getElementById('tabGacha');
     if (tabGacha) tabGacha.classList.toggle('active', tab === 'gacha');
+    const tabAcc = document.getElementById('tabAcc');
+    if (tabAcc) tabAcc.classList.toggle('active', false);
 
     updateCoinDisplay();
 }
 
 async function handleShopClick(itemId, type) {
-    const allItems = [...SKINS, ...TRAILS];
+    const allItems = [...SKINS, ...TRAILS, ...HATS, ...GLASSES];
     const item = allItems.find(i => i.id === itemId);
     if (!item) return;
 
@@ -1388,8 +1498,12 @@ async function handleGachaClick(itemId) {
 function equipItem(itemId, type) {
     if (type === 'skin') {
         currentSkin = itemId;
-    } else {
+    } else if (type === 'trail') {
         currentTrail = itemId;
+    } else if (type === 'hat') {
+        currentHat = itemId;
+    } else if (type === 'glasses') {
+        currentGlasses = itemId;
     }
     saveInventory();
     renderShopItems(shopCurrentTab);
