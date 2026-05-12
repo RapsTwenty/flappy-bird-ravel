@@ -84,7 +84,7 @@ const GACHA_ITEMS = [
         id: 'gacha_box_3', 
         name: 'Mystery Box Aksesoris', 
         price: 50, 
-        image: 'assets/gacha3.png'
+        image: 'assets/gachayellow.png'
     }
 ];
 
