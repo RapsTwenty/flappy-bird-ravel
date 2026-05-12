@@ -67,6 +67,9 @@ const TRAILS = [
     { id: 'toxic',   name: 'Toxic',   price: 300, emoji: '☢️', colors: ['#39ff14', '#c0ff40', '#80ff80'] },
     { id: 'rainbow', name: 'Rainbow', price: 400, emoji: '🌈', colors: [] },
 ];
+const GACHA_ITEMS = [
+    { id: 'gacha_box_1', name: 'Mystery Box', price: 50, emoji: '🎁' }
+];
 
 // ══════════════════════════════════════════
 // ★ SHOP STATE
@@ -1273,43 +1276,69 @@ function switchTab(tab) {
 }
 
 function renderShopItems(tab) {
-    const items = tab === 'skins' ? SKINS : TRAILS;
+    let items;
+    if (tab === 'skins') items = SKINS;
+    else if (tab === 'trails') items = TRAILS;
+    else items = GACHA_ITEMS; // Mengambil data Gacha
+
     const container = document.getElementById('shopItems');
 
     container.innerHTML = items.map((item, idx) => {
-        const owned    = ownedItems.includes(item.id);
-        const equipped = tab === 'skins' ? currentSkin === item.id : currentTrail === item.id;
         const canAfford = userCoins >= item.price;
 
-        let btnClass, btnText;
-        if (equipped) {
-            btnClass = 'shop-btn equipped';
-            btnText  = '✓ EQUIPPED';
-        } else if (owned) {
-            btnClass = 'shop-btn equip';
-            btnText  = 'EQUIP';
-        } else {
-            btnClass = 'shop-btn buy' + (!canAfford ? ' disabled' : '');
-            btnText  = item.price === 0 ? 'FREE' : `🪙 ${item.price}`;
+        // LOGIKA KHUSUS TAB GACHA
+        if (tab === 'gacha') {
+            const btnClass = 'shop-btn buy' + (!canAfford ? ' disabled' : '');
+            const btnText  = `🪙 ${item.price}`;
+            const cardClass = 'shop-item' + (!canAfford ? ' cant-afford' : '');
+
+            return `
+                <div class="${cardClass}" style="animation-delay:${idx * 0.04}s">
+                    <div class="shop-item-emoji">${item.emoji}</div>
+                    <div class="shop-item-name">${item.name}</div>
+                    <button class="${btnClass}" onclick="handleGachaClick('${item.id}')">${btnText}</button>
+                </div>
+            `;
+        } 
+        // LOGIKA UNTUK SKINS & TRAILS (Tetap sama seperti aslinya)
+        else {
+            const owned    = ownedItems.includes(item.id);
+            const equipped = tab === 'skins' ? currentSkin === item.id : currentTrail === item.id;
+
+            let btnClass, btnText;
+            if (equipped) {
+                btnClass = 'shop-btn equipped';
+                btnText  = '✓ EQUIPPED';
+            } else if (owned) {
+                btnClass = 'shop-btn equip';
+                btnText  = 'EQUIP';
+            } else {
+                btnClass = 'shop-btn buy' + (!canAfford ? ' disabled' : '');
+                btnText  = item.price === 0 ? 'FREE' : `🪙 ${item.price}`;
+            }
+
+            const cardClass = [
+                'shop-item',
+                equipped ? 'shop-item-equipped' : '',
+                !owned && !canAfford && item.price > 0 ? 'cant-afford' : ''
+            ].join(' ').trim();
+
+            return `
+                <div class="${cardClass}" style="animation-delay:${idx * 0.04}s">
+                    <div class="shop-item-emoji">${item.emoji}</div>
+                    <div class="shop-item-name">${item.name}</div>
+                    <button class="${btnClass}" onclick="handleShopClick('${item.id}','${tab === 'skins' ? 'skin' : 'trail'}')">${btnText}</button>
+                </div>
+            `;
         }
-
-        const cardClass = [
-            'shop-item',
-            equipped ? 'shop-item-equipped' : '',
-            !owned && !canAfford && item.price > 0 ? 'cant-afford' : ''
-        ].join(' ').trim();
-
-        return `
-            <div class="${cardClass}" style="animation-delay:${idx * 0.04}s">
-                <div class="shop-item-emoji">${item.emoji}</div>
-                <div class="shop-item-name">${item.name}</div>
-                <button class="${btnClass}" onclick="handleShopClick('${item.id}','${tab === 'skins' ? 'skin' : 'trail'}')">${btnText}</button>
-            </div>
-        `;
     }).join('');
 
+    // Update status tab aktif
     document.getElementById('tabSkins').classList.toggle('active', tab === 'skins');
     document.getElementById('tabTrails').classList.toggle('active', tab === 'trails');
+    const tabGacha = document.getElementById('tabGacha');
+    if (tabGacha) tabGacha.classList.toggle('active', tab === 'gacha');
+
     updateCoinDisplay();
 }
 
@@ -1328,7 +1357,25 @@ async function handleShopClick(itemId, type) {
         showShopMessage('Koin tidak cukup! 😢', 'error');
         return;
     }
-
+    async function handleGachaClick(itemId) {
+        const item = GACHA_ITEMS.find(i => i.id === itemId);
+        if (!item) return;
+    
+        if (userCoins < item.price) {
+            showShopMessage('Koin tidak cukup! 😢', 'error');
+            return;
+        }
+    
+        // Mengurangi koin di server
+        await deductCoinsOnServer(item.price);
+        
+        // Pesan sementara karena reward kosong
+        showShopMessage(`🎁 Membuka ${item.name}... (Reward masih kosong!)`, 'success');
+        
+        // Refresh UI untuk update koin
+        renderShopItems(shopCurrentTab); 
+    }
+    
     // Beli item
     await deductCoinsOnServer(item.price);
     ownedItems.push(itemId);
