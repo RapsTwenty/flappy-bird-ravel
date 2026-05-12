@@ -269,6 +269,33 @@ function toggleAuth() {
     document.getElementById("registerForm").classList.toggle("hidden");
 }
 
+// ======================================================
+// AUTH TOAST NOTIFICATION
+// ======================================================
+function showAuthToast(message, type = "error") {
+    // Remove existing toast if any
+    const existing = document.getElementById("authToast");
+    if (existing) existing.remove();
+
+    const toast = document.createElement("div");
+    toast.id = "authToast";
+    toast.className = `auth-toast auth-toast--${type}`;
+    toast.innerHTML = `
+        <span class="auth-toast-icon">${type === "success" ? "\u2714" : "\u2716"}</span>
+        <span class="auth-toast-msg">${message}</span>
+    `;
+    document.body.appendChild(toast);
+
+    // Trigger animation
+    requestAnimationFrame(() => toast.classList.add("auth-toast--show"));
+
+    // Auto-dismiss after 2.8s
+    setTimeout(() => {
+        toast.classList.remove("auth-toast--show");
+        setTimeout(() => toast.remove(), 400);
+    }, 2800);
+}
+
 async function register() {
     const username = document.getElementById("regUser").value;
     const password = document.getElementById("regPass").value;
@@ -278,8 +305,12 @@ async function register() {
         body: JSON.stringify({ username, password })
     });
     const data = await res.json();
-    alert(data.message);
-    if (res.ok) toggleAuth();
+    if (res.ok) {
+        showAuthToast(data.message, "success");
+        setTimeout(() => toggleAuth(), 1000);
+    } else {
+        showAuthToast(data.message, "error");
+    }
 }
 
 async function login() {
@@ -296,7 +327,7 @@ async function login() {
         localStorage.setItem("username", data.username);
         initGameSession();
     } else {
-        alert(data.message);
+        showAuthToast(data.message, "error");
     }
 }
 
