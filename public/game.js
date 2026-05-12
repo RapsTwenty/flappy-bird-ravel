@@ -94,12 +94,13 @@ let clouds       = [];
 let particles    = [];
 let trailParticles = [];
 
-// ══════════════════════════════════════════
-// ★ DELTA TIME — frame-rate independent physics
-// ══════════════════════════════════════════
-const TARGET_FPS = 60;
-let lastTime     = 0;   // last requestAnimationFrame timestamp
-let pipeTimer    = 0;   // replaces frame % 90 for pipe spawning
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+// \u2605 DELTA TIME \u2014 frame-rate independent physics
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+const TARGET_FPS = 60;    // target frame rate
+let   dt         = 1;     // global delta time (1.0 = one 60fps frame)
+let   lastTime   = 0;     // last rAF timestamp
+let   pipeTimer  = 90;    // start at 90 so first pipe spawns immediately
 
 // ══════════════════════════════════════════
 // ★ COMBO SYSTEM STATE
@@ -802,10 +803,10 @@ function createPipe() {
 // UPDATE LOGIC
 // ══════════════════════════════════════════
 
-function update(dt) {
+function update() {
     if (!gameRunning) return;
     bird.velocity += bird.gravity * dt;
-    bird.y += bird.velocity * dt;
+    bird.y        += bird.velocity * dt;
 
     clouds.forEach(c => {
         c.x -= c.speed * dt;
@@ -813,8 +814,9 @@ function update(dt) {
     });
     stars.forEach(s => { s.twinkle += 0.05 * dt; });
 
-    pipeTimer += dt;
-    if (pipeTimer >= 90) { createPipe(); pipeTimer -= 90; }
+    // Pipe spawning: time-based so speed is identical at any refresh rate
+    pipeTimer -= dt;
+    if (pipeTimer <= 0) { createPipe(); pipeTimer = 90; }
 
     pipes.forEach((pipe, index) => {
         pipe.x -= 2.5 * dt;
@@ -1101,13 +1103,13 @@ function drawPipes() {
 // ══════════════════════════════════════════
 
 function loop(timestamp) {
-    // Delta time: normalised so 1.0 = one frame at 60 fps
+    // Compute global dt (normalised: 1.0 = one 60fps frame)
     if (!lastTime) lastTime = timestamp;
-    let dt = (timestamp - lastTime) / (1000 / TARGET_FPS);
-    dt = Math.min(dt, 3); // cap: prevents huge jumps if tab was backgrounded
+    dt = (timestamp - lastTime) / (1000 / TARGET_FPS);
+    if (dt > 3) dt = 3; // cap to avoid giant jumps after tab-switch
     lastTime = timestamp;
 
-    update(dt);
+    update();
     draw();
     if (gameRunning) requestAnimationFrame(loop);
 }
@@ -1180,8 +1182,8 @@ function resetGame() {
     multiplierActive      = false;
     multiplierTimer       = 0;
     gameRunning = true;
-    lastTime = 0;
-    pipeTimer = 0;
+    lastTime  = 0;   // reset so dt is 0 on first new frame
+    pipeTimer = 90;  // spawn first pipe immediately
     document.getElementById("gameOverModal").classList.add("hidden");
     updateLiveScore();
     requestAnimationFrame(loop);
