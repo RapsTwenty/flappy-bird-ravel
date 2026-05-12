@@ -1357,24 +1357,6 @@ async function handleShopClick(itemId, type) {
         showShopMessage('Koin tidak cukup! 😢', 'error');
         return;
     }
-    async function handleGachaClick(itemId) {
-        const item = GACHA_ITEMS.find(i => i.id === itemId);
-        if (!item) return;
-    
-        if (userCoins < item.price) {
-            showShopMessage('Koin tidak cukup! 😢', 'error');
-            return;
-        }
-    
-        // Mengurangi koin di server
-        await deductCoinsOnServer(item.price);
-        
-        // Pesan sementara karena reward kosong
-        showShopMessage(`🎁 Membuka ${item.name}... (Reward masih kosong!)`, 'success');
-        
-        // Refresh UI untuk update koin
-        renderShopItems(shopCurrentTab); 
-    }
     
     // Beli item
     await deductCoinsOnServer(item.price);
@@ -1382,6 +1364,25 @@ async function handleShopClick(itemId, type) {
     saveInventory();
     equipItem(itemId, type);
     showShopMessage(`${item.emoji} ${item.name} berhasil dibeli!`, 'success');
+}
+
+async function handleGachaClick(itemId) {
+    const item = GACHA_ITEMS.find(i => i.id === itemId);
+    if (!item) return;
+
+    if (userCoins < item.price) {
+        showShopMessage('Koin tidak cukup! 😢', 'error');
+        return;
+    }
+
+    // Mengurangi koin di server
+    await deductCoinsOnServer(item.price);
+    
+    // Pesan sementara karena reward kosong
+    showShopMessage(`🎁 Membuka ${item.name}... (Reward masih kosong!)`, 'success');
+    
+    // Refresh UI untuk update koin
+    renderShopItems(shopCurrentTab); 
 }
 
 function equipItem(itemId, type) {
