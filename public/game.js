@@ -70,7 +70,19 @@ const TRAILS = [
 const GACHA_ITEMS = [
     { 
         id: 'gacha_box_1', 
-        name: 'Mystery Box', 
+        name: 'Mystery Box Trails', 
+        price: 50, 
+        image: 'assets/gacha.png'
+    }
+    { 
+        id: 'gacha_box_2', 
+        name: 'Mystery Box Skins', 
+        price: 50, 
+        image: 'assets/gachamerah.png'
+    }
+    { 
+        id: 'gacha_box_3', 
+        name: 'Mystery Box Aksesoris', 
         price: 50, 
         image: 'assets/gacha.png'
     }
@@ -840,7 +852,7 @@ function drawPowerupHUD() {
 // ══════════════════════════════════════════
 
 function createPipe() {
-    let gap = 140;
+    let gap = 140; // ATUR BATAS PIPA
     let minPipeHeight = 60;
     let pipeTopHeight = Math.random() * (canvas.height - gap - minPipeHeight * 2) + minPipeHeight;
     pipes.push({ x: canvas.width, y: 0, width: 52, height: pipeTopHeight, type: 'top', scored: false });
