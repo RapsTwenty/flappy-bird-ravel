@@ -73,13 +73,13 @@ const GACHA_ITEMS = [
         name: 'Mystery Box Trails', 
         price: 50, 
         image: 'assets/gacha.png'
-    }
+    },
     { 
         id: 'gacha_box_2', 
         name: 'Mystery Box Skins', 
         price: 50, 
         image: 'assets/gachamerah.png'
-    }
+    },
     { 
         id: 'gacha_box_3', 
         name: 'Mystery Box Aksesoris', 
