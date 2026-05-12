@@ -1,4 +1,4 @@
-const URL_API = "http://localhost:3000/api";
+const URL_API = "flappy-bird-ravel-production.up.railway.app";
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
