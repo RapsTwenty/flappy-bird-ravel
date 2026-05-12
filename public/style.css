@@ -1223,8 +1223,8 @@ kbd {
 }
 /* Styling untuk aset gambar di shop */
 .shop-item-img {
-    width: 60px;       /* Sesuaikan ukuran peti */
-    height: 60px;
+    width: 80px;       /* Sesuaikan ukuran peti */
+    height: 80px;
     object-fit: contain;
     margin-bottom: 10px;
     filter: drop-shadow(0 0 8px var(--neon-yellow)); /* Memberikan efek glow pada peti */
