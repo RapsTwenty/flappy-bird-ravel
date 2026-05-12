@@ -1221,3 +1221,18 @@ kbd {
         text-align: center;
     }
 }
+/* Styling untuk aset gambar di shop */
+.shop-item-img {
+    width: 60px;       /* Sesuaikan ukuran peti */
+    height: 60px;
+    object-fit: contain;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 0 8px var(--neon-yellow)); /* Memberikan efek glow pada peti */
+}
+
+.shop-item-media-container {
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

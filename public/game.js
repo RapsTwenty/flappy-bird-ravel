@@ -68,7 +68,12 @@ const TRAILS = [
     { id: 'rainbow', name: 'Rainbow', price: 400, emoji: '🌈', colors: [] },
 ];
 const GACHA_ITEMS = [
-    { id: 'gacha_box_1', name: 'Mystery Box', price: 50, emoji: '🎁' }
+    { 
+        id: 'gacha_box_1', 
+        name: 'Mystery Box', 
+        price: 50, 
+        image: 'assets/gacha.png'
+    }
 ];
 
 // ══════════════════════════════════════════
@@ -1399,15 +1404,20 @@ function renderShopItems(tab) {
             const btnClass = 'shop-btn buy' + (!canAfford ? ' disabled' : '');
             const btnText  = `🪙 ${item.price}`;
             const cardClass = 'shop-item' + (!canAfford ? ' cant-afford' : '');
-
+        
+            // Logika untuk memilih antara Gambar atau Emoji
+            const displayMedia = item.image 
+                ? `<img src="${item.image}" class="shop-item-img" alt="${item.name}">`
+                : `<div class="shop-item-emoji">${item.emoji}</div>`;
+        
             return `
                 <div class="${cardClass}" style="animation-delay:${idx * 0.04}s">
-                    <div class="shop-item-emoji">${item.emoji}</div>
+                    <div class="shop-item-media-container">${displayMedia}</div>
                     <div class="shop-item-name">${item.name}</div>
                     <button class="${btnClass}" onclick="handleGachaClick('${item.id}')">${btnText}</button>
                 </div>
             `;
-        } 
+        }
         // LOGIKA UNTUK SKINS & TRAILS
         else {
             const owned    = ownedItems.includes(item.id);
