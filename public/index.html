@@ -74,6 +74,9 @@
                 <div class="canvas-section">
                     <div class="canvas-header">
                         <div class="player-badge">
+                            <button class="mobile-menu-btn" onclick="openMobileMenu()" aria-label="Menu">
+                                <span></span><span></span><span></span>
+                            </button>
                             <span class="player-icon">🎮</span>
                             <span id="playerName" class="player-name">PLAYER</span>
                         </div>
@@ -208,6 +211,32 @@
         </div>
     </div>
 
+    <!-- ════════════════════════════════════════
+         ★ MOBILE MENU DRAWER ★
+         (slide-up, mobile only)
+    ════════════════════════════════════════ -->
+    <div id="mobileMenuDrawer" class="mobile-drawer hidden">
+        <div class="mobile-drawer-backdrop" onclick="closeMobileMenu()"></div>
+        <div class="mobile-drawer-panel">
+            <div class="mobile-drawer-header">
+                <h3 class="mobile-drawer-title">🏆 LEADERBOARD</h3>
+                <span class="mobile-lb-subtitle">TOP 10 PEMAIN</span>
+                <button class="mobile-drawer-close" onclick="closeMobileMenu()">✕</button>
+            </div>
+            <ul id="mobileScoreList" class="score-list mobile-score-list">
+                <li class="lb-loading">Memuat data...</li>
+            </ul>
+            <div class="mobile-drawer-footer">
+                <button class="btn-shop-sidebar" onclick="closeMobileMenu(); openShop()">
+                    <span>🛍️</span> SHOP
+                </button>
+                <button class="btn-logout" onclick="closeMobileMenu(); logout()">
+                    <span>⏻</span> KELUAR
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="game.js"></script>
     <script>
         // Generate floating particles
@@ -225,6 +254,20 @@
                 opacity: ${Math.random() * 0.5 + 0.1};
             `;
             particlesEl.appendChild(p);
+        }
+
+        // Mobile menu drawer
+        function openMobileMenu() {
+            const drawer = document.getElementById('mobileMenuDrawer');
+            const src = document.getElementById('scoreList');
+            const dest = document.getElementById('mobileScoreList');
+            dest.innerHTML = src.innerHTML; // sync leaderboard data
+            drawer.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeMobileMenu() {
+            document.getElementById('mobileMenuDrawer').classList.add('hidden');
+            document.body.style.overflow = '';
         }
     </script>
 </body>
