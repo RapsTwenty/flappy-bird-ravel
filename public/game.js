@@ -977,9 +977,12 @@ function update() {
 
         if (pipe.type === 'top' && !pipe.scored && pipe.x + pipe.width < bird.x) {
             pipe.scored = true;
-            score += multiplierActive ? 2 : 1;
             combo++;
             triggerComboMilestone(combo);
+            // Fever multiplier: blue (combo≥20)=×2, red (combo≥50)=×3
+            const feverMult = combo >= 50 ? 3 : (combo >= 20 ? 2 : 1);
+            const powerMult = multiplierActive ? 2 : 1;
+            score += 5 * feverMult * powerMult;
             sfxScore.currentTime = 0;
             sfxScore.play();
             updateLiveScore();
@@ -1299,11 +1302,12 @@ function gameOver() {
     document.getElementById("gameOverModal").classList.remove("hidden");
     document.getElementById("finalScore").innerText = score;
 
-    // Show coins earned
+    // Show coins earned (5 score = 1 coin)
     const earnedEl = document.getElementById("coinsEarned");
     const earnedAmt = document.getElementById("coinsEarnedAmt");
+    const coinsFromScore = Math.floor(score / 5);
     if (score > 0) {
-        earnedAmt.textContent = score;
+        earnedAmt.textContent = coinsFromScore;
         earnedEl.classList.remove("hidden");
     } else {
         earnedEl.classList.add("hidden");
@@ -1322,7 +1326,7 @@ function gameOver() {
 
     if (score > 0) {
         submitScoreAuto();
-        addCoinsToServer(score); // ★ Tambah koin sebesar skor
+        addCoinsToServer(coinsFromScore); // ★ 5 score = 1 coin
     }
 }
 
