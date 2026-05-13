@@ -94,7 +94,7 @@
                     </div>
 
                     <div class="canvas-wrapper">
-                        <canvas id="gameCanvas" width="320" height="480"></canvas>
+                        <canvas id="gameCanvas" width="360" height="540"></canvas>
 
                         <!-- Overlay: Start Screen -->
                         <div id="startScreen" class="overlay-screen">
@@ -213,6 +213,20 @@
 
             <!-- Shop Message Toast -->
             <div id="shopMsg" class="shop-msg hidden"></div>
+
+            <!-- ★ GACHA RESULT OVERLAY ★ -->
+            <div id="gachaResultOverlay" class="gacha-result-overlay hidden" data-rarity="common">
+                <div class="gacha-result-box">
+                    <div class="gacha-result-sparkles" aria-hidden="true">
+                        <span>✦</span><span>✧</span><span>✦</span>
+                        <span>✧</span><span>✦</span><span>✧</span>
+                    </div>
+                    <div id="gachaResultEmoji" class="gacha-result-emoji">🎁</div>
+                    <div id="gachaResultLabel" class="gacha-result-label">???</div>
+                    <div id="gachaResultSub" class="gacha-result-sub"></div>
+                    <button class="gacha-result-close-btn" onclick="closeGachaResult()">✦ TAP TO CONTINUE ✦</button>
+                </div>
+            </div>
 
         </div>
     </div>

@@ -89,6 +89,40 @@ const GACHA_ITEMS = [
 ];
 
 // ══════════════════════════════════════════
+// ★ GACHA POOLS — Reward tables per box
+// ══════════════════════════════════════════
+
+const GACHA_POOLS = {
+    // Mystery Box Trails — probabilitas reward
+    'gacha_box_1': [
+        { type: 'coins', amount: 20,       weight: 25, emoji: '🪙',  label: '+20 Koin',      rarity: 'common'   },
+        { type: 'trail', id: 'star',       weight: 20, emoji: '⭐',  label: 'Trail Star',    rarity: 'common'   },
+        { type: 'trail', id: 'fire',       weight: 15, emoji: '🔥',  label: 'Trail Fire',    rarity: 'uncommon' },
+        { type: 'trail', id: 'ice',        weight: 15, emoji: '❄️', label: 'Trail Ice',     rarity: 'uncommon' },
+        { type: 'trail', id: 'toxic',      weight: 15, emoji: '☢️', label: 'Trail Toxic',   rarity: 'uncommon' },
+        { type: 'trail', id: 'rainbow',    weight: 10, emoji: '🌈',  label: 'Trail Rainbow', rarity: 'rare'     },
+    ],
+    // Mystery Box Skins — belum diisi, bisa kamu tambah nanti
+    'gacha_box_2': [],
+    // Mystery Box Aksesoris — belum diisi
+    'gacha_box_3': [],
+};
+
+/** Weighted random roll — returns one reward object */
+function rollGacha(poolId) {
+    const pool = GACHA_POOLS[poolId];
+    if (!pool || pool.length === 0) return null;
+
+    const totalWeight = pool.reduce((sum, r) => sum + r.weight, 0);
+    let rand = Math.random() * totalWeight;
+    for (const reward of pool) {
+        rand -= reward.weight;
+        if (rand <= 0) return { ...reward };
+    }
+    return { ...pool[pool.length - 1] };
+}
+
+// ══════════════════════════════════════════
 // ★ ACCESSORIES — Hats & Glasses
 // ══════════════════════════════════════════
 
@@ -129,7 +163,7 @@ let currentUser  = localStorage.getItem("username") || null;
 let gameRunning  = false;
 let score        = 0;
 let highScore    = parseInt(localStorage.getItem("highScore")) || 0;
-let bird         = { x: 60, y: 200, width: 28, height: 24, gravity: 0.5, lift: -9, velocity: 0 };
+let bird         = { x: 60, y: 230, width: 28, height: 24, gravity: 0.5, lift: -9, velocity: 0 };
 let pipes        = [];
 let frame        = 0;
 let stars        = [];
@@ -1278,7 +1312,7 @@ async function submitScoreAuto() {
 }
 
 function resetGame() {
-    bird.y = 200; bird.velocity = 0;
+    bird.y = 230; bird.velocity = 0;
     pipes = []; particles = []; trailParticles = []; powerups = [];
     score = 0; frame = 0; combo = 0; comboTexts = [];
     pipeSpawnCount        = 0;
@@ -1507,14 +1541,76 @@ async function handleGachaClick(itemId) {
         return;
     }
 
-    // Mengurangi koin di server
+    const pool = GACHA_POOLS[itemId];
+    if (!pool || pool.length === 0) {
+        showShopMessage(`🎁 ${item.name} — reward belum tersedia!`, 'error');
+        return;
+    }
+
+    // Kurangi koin dulu
     await deductCoinsOnServer(item.price);
-    
-    // Pesan sementara karena reward kosong
-    showShopMessage(`🎁 Membuka ${item.name}... (Reward masih kosong!)`, 'success');
-    
-    // Refresh UI untuk update koin
-    renderShopItems(shopCurrentTab); 
+
+    // Roll reward
+    const reward = rollGacha(itemId);
+    if (!reward) return;
+
+    // Terapkan reward
+    let alreadyOwned = false;
+    if (reward.type === 'coins') {
+        await addCoinsToServer(reward.amount);
+    } else if (reward.type === 'trail') {
+        if (ownedItems.includes(reward.id)) {
+            // Sudah punya trail ini — kasih kompensasi 15 koin
+            alreadyOwned = true;
+            await addCoinsToServer(15);
+        } else {
+            ownedItems.push(reward.id);
+            saveInventory();
+        }
+    }
+
+    // Tampilkan hasil gacha
+    showGachaResult(reward, alreadyOwned);
+    renderShopItems(shopCurrentTab);
+}
+
+// ── Gacha result modal ────────────────────
+function showGachaResult(reward, alreadyOwned = false) {
+    const overlay = document.getElementById('gachaResultOverlay');
+    if (!overlay) return;
+
+    const emojiEl  = document.getElementById('gachaResultEmoji');
+    const labelEl  = document.getElementById('gachaResultLabel');
+    const subEl    = document.getElementById('gachaResultSub');
+
+    // Set rarity class for glow colour
+    overlay.dataset.rarity = reward.rarity || 'common';
+
+    emojiEl.textContent  = reward.emoji;
+    labelEl.textContent  = reward.label;
+
+    if (alreadyOwned) {
+        subEl.textContent = 'Sudah punya! Dapat kompensasi +15 🪙';
+        subEl.style.display = 'block';
+    } else if (reward.type === 'coins') {
+        subEl.textContent = 'Koin masuk ke dompetmu!';
+        subEl.style.display = 'block';
+    } else {
+        subEl.textContent = 'Trail baru terbuka!';
+        subEl.style.display = 'block';
+    }
+
+    overlay.classList.remove('hidden');
+    // reset animation
+    const box = overlay.querySelector('.gacha-result-box');
+    box.classList.remove('gacha-pop');
+    void box.offsetWidth;
+    box.classList.add('gacha-pop');
+}
+
+function closeGachaResult() {
+    const overlay = document.getElementById('gachaResultOverlay');
+    if (overlay) overlay.classList.add('hidden');
 }
 
 function equipItem(itemId, type) {
