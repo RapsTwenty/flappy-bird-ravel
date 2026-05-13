@@ -1695,8 +1695,8 @@ kbd {
 
 /* Coin — shop price button (small) */
 .icon-coin-sm {
-    width: 28px;
-    height: 28px;
+    width: 14px;
+    height: 14px;
     object-fit: contain;
     vertical-align: middle;
     margin-bottom: 1px;
