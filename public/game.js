@@ -319,32 +319,63 @@ function updateCoinDisplay(animate = false) {
 // ★ INVENTORY — localStorage per user
 // ══════════════════════════════════════════
 
-function loadInventory() {
+// Load inventory from localStorage (sync, used as fallback)
+function _loadInventoryLocal() {
     try {
         const raw = localStorage.getItem(`owned_${currentUser}`);
         ownedItems = raw ? JSON.parse(raw) : ['default', 'none', 'hat_none', 'glasses_none'];
-    } catch {
-        ownedItems = ['default', 'none', 'hat_none', 'glasses_none'];
-    }
-    // Pastikan item gratis selalu dimiliki
-    if (!ownedItems.includes('default'))       ownedItems.push('default');
-    if (!ownedItems.includes('none'))          ownedItems.push('none');
-    if (!ownedItems.includes('hat_none'))      ownedItems.push('hat_none');
-    if (!ownedItems.includes('glasses_none'))  ownedItems.push('glasses_none');
-
+    } catch { ownedItems = ['default', 'none', 'hat_none', 'glasses_none']; }
+    if (!ownedItems.includes('default'))      ownedItems.push('default');
+    if (!ownedItems.includes('none'))         ownedItems.push('none');
+    if (!ownedItems.includes('hat_none'))     ownedItems.push('hat_none');
+    if (!ownedItems.includes('glasses_none')) ownedItems.push('glasses_none');
     currentSkin    = localStorage.getItem(`skin_${currentUser}`)    || 'default';
     currentTrail   = localStorage.getItem(`trail_${currentUser}`)   || 'none';
     currentHat     = localStorage.getItem(`hat_${currentUser}`)     || 'hat_none';
     currentGlasses = localStorage.getItem(`glasses_${currentUser}`) || 'glasses_none';
 }
 
+// saveInventory: always writes to localStorage, then pushes to server silently
 function saveInventory() {
     localStorage.setItem(`owned_${currentUser}`, JSON.stringify(ownedItems));
     localStorage.setItem(`skin_${currentUser}`,    currentSkin);
     localStorage.setItem(`trail_${currentUser}`,   currentTrail);
     localStorage.setItem(`hat_${currentUser}`,     currentHat);
     localStorage.setItem(`glasses_${currentUser}`, currentGlasses);
+    // Fire-and-forget server sync
+    fetch(`${URL_API}/api/user/${currentUser}/inventory`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ownedItems, currentSkin, currentTrail, currentHat, currentGlasses })
+    }).catch(() => {});
 }
+
+// loadInventory: loads localStorage immediately (fast), then syncs from server
+function loadInventory() {
+    _loadInventoryLocal(); // immediate display
+    fetch(`${URL_API}/api/user/${currentUser}/inventory`)
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(d => {
+            ownedItems    = d.ownedItems    || ['default','none','hat_none','glasses_none'];
+            currentSkin   = d.currentSkin   || 'default';
+            currentTrail  = d.currentTrail  || 'none';
+            currentHat    = d.currentHat    || 'hat_none';
+            currentGlasses= d.currentGlasses|| 'glasses_none';
+            if (!ownedItems.includes('default'))      ownedItems.push('default');
+            if (!ownedItems.includes('none'))         ownedItems.push('none');
+            if (!ownedItems.includes('hat_none'))     ownedItems.push('hat_none');
+            if (!ownedItems.includes('glasses_none')) ownedItems.push('glasses_none');
+            // Update localStorage cache
+            localStorage.setItem(`owned_${currentUser}`,   JSON.stringify(ownedItems));
+            localStorage.setItem(`skin_${currentUser}`,    currentSkin);
+            localStorage.setItem(`trail_${currentUser}`,   currentTrail);
+            localStorage.setItem(`hat_${currentUser}`,     currentHat);
+            localStorage.setItem(`glasses_${currentUser}`, currentGlasses);
+            if (!gameRunning) drawIdleScreen();
+        })
+        .catch(() => {}); // already loaded from localStorage above
+}
+
 
 // ══════════════════════════════════════════
 // ★ SKIN HELPER
@@ -453,12 +484,38 @@ function logout() {
 
 const bgm = document.getElementById("bgm");
 
+// ══════════════════════════════════════════
+// SOUND MUTE TOGGLE
+// ══════════════════════════════════════════
+
+let isMuted = localStorage.getItem('soundMuted') === 'true';
+
+function applyMuteState() {
+    const allSfx = [sfxScore, sfxShield, sfxX2, sfxDeath, sfxGacha];
+    allSfx.forEach(s => { if (s) s.muted = isMuted; });
+    if (bgm) bgm.muted = isMuted;
+    const icon  = isMuted ? '🔇' : '🔊';
+    const label = isMuted ? 'MUTED' : 'SOUND';
+    ['muteBtn', 'muteBtnMobile'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.innerHTML = `${icon} ${label}`; el.classList.toggle('muted', isMuted); }
+    });
+}
+
+function toggleMute() {
+    isMuted = !isMuted;
+    localStorage.setItem('soundMuted', isMuted);
+    applyMuteState();
+}
+
+
 function initGameSession() {
     document.getElementById("authPage").classList.add("hidden");
     document.getElementById("gamePage").classList.remove("hidden");
 
     bgm.volume = 0.4;
-    bgm.play().catch(() => {});
+    if (!isMuted) bgm.play().catch(() => {});
+    applyMuteState();
 
     const nameEl = document.getElementById("playerName");
     if (nameEl) nameEl.textContent = (currentUser || "GUEST").toUpperCase();

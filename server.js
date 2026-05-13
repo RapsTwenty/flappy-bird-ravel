@@ -118,6 +118,48 @@ app.post('/api/score', async (req, res) => {
 });
 
 // Sinkronisasi DB — alter:true agar kolom 'coins' ditambahkan ke tabel User yang sudah ada
+
+// ── INVENTORY ───────────────────────────────────────
+
+const Inventory = sequelize.define('Inventory', {
+    username:     { type: DataTypes.STRING, allowNull: false, unique: true },
+    ownedItems:   { type: DataTypes.TEXT,   defaultValue: '["default","none","hat_none","glasses_none"]' },
+    currentSkin:  { type: DataTypes.STRING, defaultValue: 'default'       },
+    currentTrail: { type: DataTypes.STRING, defaultValue: 'none'          },
+    currentHat:   { type: DataTypes.STRING, defaultValue: 'hat_none'      },
+    currentGlasses:{ type: DataTypes.STRING,defaultValue: 'glasses_none'  }
+}, { tableName: 'inventories', timestamps: true });
+
+// GET: Load inventory
+app.get('/api/user/:username/inventory', async (req, res) => {
+    try {
+        let inv = await Inventory.findOne({ where: { username: req.params.username } });
+        if (!inv) inv = await Inventory.create({ username: req.params.username });
+        res.json({
+            ownedItems:    JSON.parse(inv.ownedItems || '["default","none","hat_none","glasses_none"]'),
+            currentSkin:   inv.currentSkin   || 'default',
+            currentTrail:  inv.currentTrail  || 'none',
+            currentHat:    inv.currentHat    || 'hat_none',
+            currentGlasses:inv.currentGlasses|| 'glasses_none'
+        });
+    } catch (error) { res.status(500).json({ message: error.message }); }
+});
+
+// POST: Save inventory
+app.post('/api/user/:username/inventory', async (req, res) => {
+    try {
+        const { ownedItems, currentSkin, currentTrail, currentHat, currentGlasses } = req.body;
+        const [inv] = await Inventory.findOrCreate({ where: { username: req.params.username } });
+        if (ownedItems)    inv.ownedItems    = JSON.stringify(ownedItems);
+        if (currentSkin)   inv.currentSkin   = currentSkin;
+        if (currentTrail)  inv.currentTrail  = currentTrail;
+        if (currentHat)    inv.currentHat    = currentHat;
+        if (currentGlasses)inv.currentGlasses= currentGlasses;
+        await inv.save();
+        res.json({ success: true });
+    } catch (error) { res.status(500).json({ message: error.message }); }
+});
+
 sequelize.sync({ alter: true })
     .then(() => console.log('Database & Table Berhasil Sinkron!'))
     .catch(err => console.log('Error Sinkronisasi: ' + err));
