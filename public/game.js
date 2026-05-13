@@ -12,6 +12,12 @@ sfxShield.volume = 0.7;
 const sfxX2     = new Audio("assets/x2.mp3");
 sfxX2.volume    = 0.7;
 
+const sfxDeath  = new Audio("assets/death.mp3");
+sfxDeath.volume = 0.8;
+
+const sfxGacha  = new Audio("assets/gacha.mp3");
+sfxGacha.volume = 0.8;
+
 // ══════════════════════════════════════════
 // ★ SHOP DATA — Skins & Trails
 // ══════════════════════════════════════════
@@ -102,10 +108,30 @@ const GACHA_POOLS = {
         { type: 'trail', id: 'toxic',      weight: 15, emoji: '☢️', label: 'Trail Toxic',   rarity: 'uncommon' },
         { type: 'trail', id: 'rainbow',    weight: 10, emoji: '🌈',  label: 'Trail Rainbow', rarity: 'rare'     },
     ],
-    // Mystery Box Skins — belum diisi, bisa kamu tambah nanti
-    'gacha_box_2': [],
-    // Mystery Box Aksesoris — belum diisi
-    'gacha_box_3': [],
+    // Mystery Box Skins — probabilitas reward
+    'gacha_box_2': [
+        { type: 'coins', amount: 20,        weight: 10, emoji: '🪙',  label: '+20 Koin',       rarity: 'common'   },
+        { type: 'skin',  id: 'aqua',        weight: 20, emoji: '💧',  label: 'Skin Aqua',      rarity: 'common'   },
+        { type: 'skin',  id: 'cherry',      weight: 20, emoji: '🌸',  label: 'Skin Cherry',    rarity: 'common'   },
+        { type: 'skin',  id: 'forest',      weight: 15, emoji: '🌿',  label: 'Skin Forest',    rarity: 'uncommon' },
+        { type: 'skin',  id: 'galaxy',      weight: 15, emoji: '🔮',  label: 'Skin Galaxy',    rarity: 'uncommon' },
+        { type: 'skin',  id: 'flame',       weight: 10, emoji: '🔥',  label: 'Skin Flame',     rarity: 'uncommon' },
+        { type: 'skin',  id: 'midnight',    weight: 5,  emoji: '🌙',  label: 'Skin Midnight',  rarity: 'rare'     },
+        { type: 'skin',  id: 'rainbow',     weight: 5,  emoji: '🌈',  label: 'Skin Rainbow',   rarity: 'rare'     },
+    ],
+    // Mystery Box Aksesoris — koin 20%, sisanya merata
+    'gacha_box_3': [
+        { type: 'coins',   amount: 20,               weight: 20, emoji: '🪙',  label: '+20 Koin',         rarity: 'common'   },
+        { type: 'hat',     id: 'hat_tophat',          weight: 9,  emoji: '🎩',  label: 'Topi Top Hat',     rarity: 'common'   },
+        { type: 'hat',     id: 'hat_crown',           weight: 9,  emoji: '👑',  label: 'Topi Mahkota',     rarity: 'rare'     },
+        { type: 'hat',     id: 'hat_grad',            weight: 9,  emoji: '🎓',  label: 'Topi Toga',        rarity: 'common'   },
+        { type: 'hat',     id: 'hat_helmet',          weight: 9,  emoji: '🪖',  label: 'Topi Helm',        rarity: 'common'   },
+        { type: 'hat',     id: 'hat_santa',           weight: 9,  emoji: '🎅',  label: 'Topi Santa',       rarity: 'uncommon' },
+        { type: 'glasses', id: 'glasses_sunglasses',  weight: 9,  emoji: '🕶️', label: 'Kacamata Sunglasses', rarity: 'common' },
+        { type: 'glasses', id: 'glasses_nerd',        weight: 9,  emoji: '👓',  label: 'Kacamata Nerd',    rarity: 'common'   },
+        { type: 'glasses', id: 'glasses_goggles',     weight: 9,  emoji: '🥽',  label: 'Kacamata Goggles', rarity: 'uncommon' },
+        { type: 'glasses', id: 'glasses_monocle',     weight: 9,  emoji: '🧐',  label: 'Kacamata Monokel', rarity: 'uncommon' },
+    ],
 };
 
 /** Weighted random roll — returns one reward object */
@@ -1260,6 +1286,8 @@ function loop(timestamp) {
 
 function gameOver() {
     gameRunning = false;
+    sfxDeath.currentTime = 0;
+    sfxDeath.play();
     combo = 0;
     comboTexts = [];
     // Reset powerup state
@@ -1550,6 +1578,10 @@ async function handleGachaClick(itemId) {
     // Kurangi koin dulu
     await deductCoinsOnServer(item.price);
 
+    // Play gacha SFX
+    sfxGacha.currentTime = 0;
+    sfxGacha.play();
+
     // Roll reward
     const reward = rollGacha(itemId);
     if (!reward) return;
@@ -1560,7 +1592,22 @@ async function handleGachaClick(itemId) {
         await addCoinsToServer(reward.amount);
     } else if (reward.type === 'trail') {
         if (ownedItems.includes(reward.id)) {
-            // Sudah punya trail ini — kasih kompensasi 15 koin
+            alreadyOwned = true;
+            await addCoinsToServer(15);
+        } else {
+            ownedItems.push(reward.id);
+            saveInventory();
+        }
+    } else if (reward.type === 'skin') {
+        if (ownedItems.includes(reward.id)) {
+            alreadyOwned = true;
+            await addCoinsToServer(15);
+        } else {
+            ownedItems.push(reward.id);
+            saveInventory();
+        }
+    } else if (reward.type === 'hat' || reward.type === 'glasses') {
+        if (ownedItems.includes(reward.id)) {
             alreadyOwned = true;
             await addCoinsToServer(15);
         } else {
@@ -1595,8 +1642,17 @@ function showGachaResult(reward, alreadyOwned = false) {
     } else if (reward.type === 'coins') {
         subEl.textContent = 'Koin masuk ke dompetmu!';
         subEl.style.display = 'block';
+    } else if (reward.type === 'skin') {
+        subEl.textContent = 'Skin baru terbuka!';
+        subEl.style.display = 'block';
+    } else if (reward.type === 'hat') {
+        subEl.textContent = 'Topi baru terbuka!';
+        subEl.style.display = 'block';
+    } else if (reward.type === 'glasses') {
+        subEl.textContent = 'Kacamata baru terbuka!';
+        subEl.style.display = 'block';
     } else {
-        subEl.textContent = 'Trail baru terbuka!';
+        subEl.textContent = 'Item baru terbuka!';
         subEl.style.display = 'block';
     }
 
