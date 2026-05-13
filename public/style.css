@@ -1656,3 +1656,109 @@ kbd {
     background: rgba(255, 45, 120, 0.16);
     box-shadow: 0 0 12px rgba(255, 45, 120, 0.2);
 }
+/* ════════════════════════════════════════
+   ★ CUSTOM ASSET ICONS
+════════════════════════════════════════ */
+
+/* Game Over skull */
+.icon-skull {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 18px rgba(255, 45, 120, 0.7))
+            drop-shadow(0 0 40px rgba(255, 45, 120, 0.35));
+    animation: skullPulse 1.8s ease-in-out infinite;
+    image-rendering: auto;
+}
+@keyframes skullPulse {
+    0%, 100% { transform: scale(1) rotate(-3deg);   filter: drop-shadow(0 0 18px rgba(255,45,120,0.7)); }
+    50%       { transform: scale(1.08) rotate(3deg); filter: drop-shadow(0 0 30px rgba(255,45,120,1));   }
+}
+
+/* Coin — HUD size */
+.icon-coin {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    vertical-align: middle;
+    filter: drop-shadow(0 0 6px rgba(245,208,0,0.8));
+    animation: coinSpin 3s linear infinite;
+    image-rendering: auto;
+}
+@keyframes coinSpin {
+    0%   { transform: rotateY(0deg); }
+    45%  { transform: rotateY(0deg); }
+    50%  { transform: rotateY(90deg); }
+    55%  { transform: rotateY(0deg); }
+    100% { transform: rotateY(0deg); }
+}
+
+/* Coin — shop price button (small) */
+.icon-coin-sm {
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+    vertical-align: middle;
+    margin-bottom: 1px;
+    filter: drop-shadow(0 0 4px rgba(245,208,0,0.6));
+    image-rendering: auto;
+}
+
+/* Shop icon — buttons */
+.icon-shop {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    vertical-align: middle;
+    filter: drop-shadow(0 0 6px rgba(176,96,255,0.7));
+    image-rendering: auto;
+}
+
+/* Shop icon — modal header (larger) */
+.icon-shop-lg {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    vertical-align: middle;
+    filter: drop-shadow(0 0 10px rgba(176,96,255,0.8));
+    animation: shopGlow 2.2s ease-in-out infinite alternate;
+    image-rendering: auto;
+}
+@keyframes shopGlow {
+    from { filter: drop-shadow(0 0 8px rgba(176,96,255,0.6)); }
+    to   { filter: drop-shadow(0 0 18px rgba(176,96,255,1)) brightness(1.15); }
+}
+
+/* gameover-icon wrapper: remove fixed emoji font sizing */
+.gameover-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
+}
+
+/* coin-hud alignment fix */
+.coin-hud {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.coin-icon {
+    display: flex;
+    align-items: center;
+}
+
+/* shop-coin-balance alignment fix */
+.shop-coin-balance {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* shop-btn: allow img inside */
+.shop-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}

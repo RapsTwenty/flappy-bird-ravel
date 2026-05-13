@@ -1595,7 +1595,7 @@ function renderShopItems(tab) {
                 btnText  = 'PAKAI';
             } else {
                 btnClass = 'shop-btn buy' + (!canAfford ? ' disabled' : '');
-                btnText  = item.price === 0 ? 'FREE' : `🪙 ${item.price}`;
+                btnText  = item.price === 0 ? 'FREE' : `<img src="assets/coin.png" class="icon-coin-sm" alt=""> ${item.price}`;
             }
 
             const cardClass = [
@@ -1637,7 +1637,7 @@ function renderShopItems(tab) {
         // LOGIKA KHUSUS TAB GACHA
         if (tab === 'gacha') {
             const btnClass = 'shop-btn buy' + (!canAfford ? ' disabled' : '');
-            const btnText  = `🪙 ${item.price}`;
+            const btnText  = `<img src="assets/coin.png" class="icon-coin-sm" alt=""> ${item.price}`;
             const cardClass = 'shop-item' + (!canAfford ? ' cant-afford' : '');
         
             // Logika untuk memilih antara Gambar atau Emoji
@@ -1667,7 +1667,7 @@ function renderShopItems(tab) {
                 btnText  = 'EQUIP';
             } else {
                 btnClass = 'shop-btn buy' + (!canAfford ? ' disabled' : '');
-                btnText  = item.price === 0 ? 'FREE' : `🪙 ${item.price}`;
+                btnText  = item.price === 0 ? 'FREE' : `<img src="assets/coin.png" class="icon-coin-sm" alt=""> ${item.price}`;
             }
 
             const cardClass = [
