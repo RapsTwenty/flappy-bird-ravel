@@ -1662,8 +1662,8 @@ kbd {
 
 /* Game Over skull */
 .icon-skull {
-    width: 72px;
-    height: 72px;
+    width: 92px;
+    height: 92px;
     object-fit: contain;
     filter: drop-shadow(0 0 18px rgba(255, 45, 120, 0.7))
             drop-shadow(0 0 40px rgba(255, 45, 120, 0.35));
@@ -1695,8 +1695,8 @@ kbd {
 
 /* Coin — shop price button (small) */
 .icon-coin-sm {
-    width: 14px;
-    height: 14px;
+    width: 28px;
+    height: 28px;
     object-fit: contain;
     vertical-align: middle;
     margin-bottom: 1px;
@@ -1706,8 +1706,8 @@ kbd {
 
 /* Shop icon — buttons */
 .icon-shop {
-    width: 20px;
-    height: 20px;
+    width: 40px;
+    height: 40px;
     object-fit: contain;
     vertical-align: middle;
     filter: drop-shadow(0 0 6px rgba(176,96,255,0.7));
@@ -1716,8 +1716,8 @@ kbd {
 
 /* Shop icon — modal header (larger) */
 .icon-shop-lg {
-    width: 30px;
-    height: 30px;
+    width: 60px;
+    height: 60px;
     object-fit: contain;
     vertical-align: middle;
     filter: drop-shadow(0 0 10px rgba(176,96,255,0.8));
