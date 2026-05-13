@@ -1039,7 +1039,7 @@ function update() {
             // Fever multiplier: blue (combo≥20)=×2, red (combo≥50)=×3
             const feverMult = combo >= 50 ? 3 : (combo >= 20 ? 2 : 1);
             const powerMult = multiplierActive ? 2 : 1;
-            score += 5 * feverMult * powerMult;
+            score += 100 * feverMult * powerMult;
             sfxScore.currentTime = 0;
             sfxScore.play();
             updateLiveScore();
@@ -1359,10 +1359,10 @@ function gameOver() {
     document.getElementById("gameOverModal").classList.remove("hidden");
     document.getElementById("finalScore").innerText = score;
 
-    // Show coins earned (5 score = 1 coin)
+    // Show coins earned (100 score = 1 coin)
     const earnedEl = document.getElementById("coinsEarned");
     const earnedAmt = document.getElementById("coinsEarnedAmt");
-    const coinsFromScore = Math.floor(score / 5);
+    const coinsFromScore = Math.floor(score / 100);
     if (score > 0) {
         earnedAmt.textContent = coinsFromScore;
         earnedEl.classList.remove("hidden");
@@ -1383,7 +1383,7 @@ function gameOver() {
 
     if (score > 0) {
         submitScoreAuto();
-        addCoinsToServer(coinsFromScore); // ★ 5 score = 1 coin
+        addCoinsToServer(coinsFromScore); // ★ 100 score = 1 coin
     }
 }
 
@@ -1694,40 +1694,116 @@ function showGachaResult(reward, alreadyOwned = false) {
     // Set rarity class for glow colour
     overlay.dataset.rarity = reward.rarity || 'common';
 
-    emojiEl.textContent  = reward.emoji;
-    labelEl.textContent  = reward.label;
-
-    if (alreadyOwned) {
-        subEl.textContent = 'Sudah punya! Dapat kompensasi +15 🪙';
-        subEl.style.display = 'block';
-    } else if (reward.type === 'coins') {
-        subEl.textContent = 'Koin masuk ke dompetmu!';
-        subEl.style.display = 'block';
-    } else if (reward.type === 'skin') {
-        subEl.textContent = 'Skin baru terbuka!';
-        subEl.style.display = 'block';
-    } else if (reward.type === 'hat') {
-        subEl.textContent = 'Topi baru terbuka!';
-        subEl.style.display = 'block';
-    } else if (reward.type === 'glasses') {
-        subEl.textContent = 'Kacamata baru terbuka!';
-        subEl.style.display = 'block';
-    } else {
-        subEl.textContent = 'Item baru terbuka!';
-        subEl.style.display = 'block';
-    }
-
+    // ── Phase 1: Show spinning mystery box overlay ──
     overlay.classList.remove('hidden');
-    // reset animation
+    overlay.classList.add('gacha-phase-suspense');
+
     const box = overlay.querySelector('.gacha-result-box');
-    box.classList.remove('gacha-pop');
-    void box.offsetWidth;
-    box.classList.add('gacha-pop');
+    box.classList.remove('gacha-pop', 'gacha-shake-rare');
+
+    // Temporarily show mystery box
+    emojiEl.textContent  = '🎁';
+    labelEl.textContent  = '???';
+    subEl.style.display  = 'none';
+
+    // Kick off the spinning suspense animation
+    emojiEl.classList.remove('gacha-spin-reveal');
+    void emojiEl.offsetWidth;
+    emojiEl.classList.add('gacha-spin-reveal');
+
+    // Flash the rarity beam right away
+    const beam = document.createElement('div');
+    beam.className = `gacha-beam gacha-beam--${reward.rarity || 'common'}`;
+    overlay.appendChild(beam);
+    setTimeout(() => beam.remove(), 1200);
+
+    // ── Phase 2: Reveal reward after suspense ──
+    setTimeout(() => {
+        overlay.classList.remove('gacha-phase-suspense');
+
+        emojiEl.classList.remove('gacha-spin-reveal');
+        void emojiEl.offsetWidth;
+
+        emojiEl.textContent = reward.emoji;
+        labelEl.textContent = reward.label;
+
+        if (alreadyOwned) {
+            subEl.textContent = 'Sudah punya! Dapat kompensasi +15 🪙';
+            subEl.style.display = 'block';
+        } else if (reward.type === 'coins') {
+            subEl.textContent = 'Koin masuk ke dompetmu!';
+            subEl.style.display = 'block';
+        } else if (reward.type === 'skin') {
+            subEl.textContent = 'Skin baru terbuka!';
+            subEl.style.display = 'block';
+        } else if (reward.type === 'hat') {
+            subEl.textContent = 'Topi baru terbuka!';
+            subEl.style.display = 'block';
+        } else if (reward.type === 'glasses') {
+            subEl.textContent = 'Kacamata baru terbuka!';
+            subEl.style.display = 'block';
+        } else {
+            subEl.textContent = 'Item baru terbuka!';
+            subEl.style.display = 'block';
+        }
+
+        // Pop-in the card
+        void box.offsetWidth;
+        box.classList.add('gacha-pop');
+
+        // Extra shake for rare
+        if (reward.rarity === 'rare') {
+            setTimeout(() => box.classList.add('gacha-shake-rare'), 200);
+            // Screen flash
+            const flash = document.createElement('div');
+            flash.className = 'gacha-flash';
+            overlay.appendChild(flash);
+            setTimeout(() => flash.remove(), 700);
+        }
+
+        // Burst particles
+        _spawnGachaParticles(overlay, reward.rarity || 'common');
+
+    }, 900); // suspense window
 }
 
 function closeGachaResult() {
     const overlay = document.getElementById('gachaResultOverlay');
     if (overlay) overlay.classList.add('hidden');
+}
+
+// Helper: CSS particle burst inside the gacha overlay
+function _spawnGachaParticles(overlay, rarity) {
+    const COLORS = {
+        common:   ['#d0d0e8', '#a0a0c0', '#ffffff'],
+        uncommon: ['#00f0ff', '#40ffff', '#00b0c0'],
+        rare:     ['#ffd700', '#ff6b6b', '#c77dff', '#6bcb77', '#4d96ff']
+    };
+    const cols = COLORS[rarity] || COLORS.common;
+    const count = rarity === 'rare' ? 28 : (rarity === 'uncommon' ? 18 : 10);
+
+    for (let i = 0; i < count; i++) {
+        const p = document.createElement('div');
+        p.className = 'gacha-particle';
+        const angle  = (Math.random() * 360);
+        const dist   = 60 + Math.random() * 100;
+        const size   = 4 + Math.random() * 7;
+        const col    = cols[Math.floor(Math.random() * cols.length)];
+        const dur    = 0.6 + Math.random() * 0.7;
+        const delay  = Math.random() * 0.25;
+        p.style.cssText = `
+            --angle: ${angle}deg;
+            --dist: ${dist}px;
+            width: ${size}px;
+            height: ${size}px;
+            background: ${col};
+            box-shadow: 0 0 ${size * 2}px ${col};
+            animation-duration: ${dur}s;
+            animation-delay: ${delay}s;
+        `;
+        overlay.querySelector('.gacha-result-box').appendChild(p);
+        setTimeout(() => p.remove(), (dur + delay + 0.1) * 1000);
+    }
 }
 
 function equipItem(itemId, type) {

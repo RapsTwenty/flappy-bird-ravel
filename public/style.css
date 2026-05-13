@@ -84,6 +84,75 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* ============ AUTH FOOTER ============ */
+.auth-footer {
+    margin-top: 28px;
+    text-align: center;
+}
+
+.auth-footer-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,240,255,0.2), transparent);
+    margin-bottom: 18px;
+}
+
+.auth-footer-links {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.auth-footer-link {
+    font-family: var(--font-hud);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.2s, text-shadow 0.2s;
+}
+
+.auth-footer-link:hover {
+    color: var(--neon-cyan);
+    text-shadow: 0 0 8px rgba(0,240,255,0.5);
+}
+
+.auth-footer-dot {
+    color: rgba(0,240,255,0.25);
+    font-size: 14px;
+    line-height: 1;
+}
+
+.auth-footer-copy {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.7;
+    margin-bottom: 6px;
+}
+
+.auth-footer-brand {
+    font-family: var(--font-hud);
+    font-size: 10px;
+    color: var(--neon-yellow);
+    letter-spacing: 1px;
+    text-shadow: 0 0 8px rgba(245,208,0,0.4);
+}
+
+.auth-footer-name {
+    color: var(--neon-cyan);
+    font-weight: 700;
+    text-shadow: 0 0 6px rgba(0,240,255,0.4);
+}
+
+.auth-footer-version {
+    font-family: var(--font-hud);
+    font-size: 8px;
+    letter-spacing: 2px;
+    color: rgba(123, 138, 184, 0.5);
+}
+
 /* ============ AUTH CARD ============ */
 .auth-card {
     background: var(--dark-card);
@@ -1244,14 +1313,59 @@ kbd {
 .gacha-result-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(8, 12, 26, 0.92);
-    backdrop-filter: blur(8px);
+    background: rgba(4, 6, 18, 0.96);
+    backdrop-filter: blur(12px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 100;
     border-radius: 28px;
-    animation: fadeIn 0.2s ease both;
+    animation: gachaFadeIn 0.25s ease both;
+    overflow: hidden;
+}
+
+@keyframes gachaFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* Suspense phase — box dims down */
+.gacha-phase-suspense .gacha-result-box { opacity: 0.85; }
+.gacha-phase-suspense .gacha-result-emoji {
+    filter: drop-shadow(0 0 30px rgba(176,96,255,0.9)) brightness(1.2);
+}
+
+/* Rotating mystery "aura" ring behind the box */
+.gacha-result-overlay::before {
+    content: '';
+    position: absolute;
+    width: 260px; height: 260px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    background: conic-gradient(
+        rgba(176,96,255,0.4), rgba(0,240,255,0.4),
+        rgba(245,208,0,0.4), rgba(176,96,255,0.4)
+    ) border-box;
+    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: destination-out;
+    mask-composite: exclude;
+    animation: auraRotate 2.2s linear infinite;
+    opacity: 0.55;
+}
+@keyframes auraRotate { to { transform: rotate(360deg); } }
+
+/* Pulsing background radial bloom */
+.gacha-result-overlay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(176,96,255,0.18) 0%, transparent 70%);
+    animation: bloomPulse 1.4s ease-in-out infinite alternate;
+    pointer-events: none;
+}
+@keyframes bloomPulse {
+    from { opacity: 0.4; transform: scale(0.9); }
+    to   { opacity: 1;   transform: scale(1.1); }
 }
 
 .gacha-result-box {
@@ -1262,56 +1376,89 @@ kbd {
     padding: 40px 48px;
     position: relative;
     text-align: center;
+    z-index: 2;
 }
 
 /* Pop-in animation on reveal */
 @keyframes gachaPop {
-    0%   { opacity: 0; transform: scale(0.4) rotate(-8deg); }
-    60%  { transform: scale(1.12) rotate(3deg); }
-    80%  { transform: scale(0.96) rotate(-1deg); }
+    0%   { opacity: 0; transform: scale(0.3) rotate(-12deg); }
+    55%  { transform: scale(1.18) rotate(4deg); }
+    75%  { transform: scale(0.94) rotate(-2deg); }
+    90%  { transform: scale(1.04) rotate(1deg); }
     100% { opacity: 1; transform: scale(1) rotate(0deg); }
 }
-.gacha-pop { animation: gachaPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.gacha-pop { animation: gachaPop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* Rare shake */
+@keyframes gachaShakeRare {
+    0%,100% { transform: translate(0,0) rotate(0deg); }
+    15%  { transform: translate(-5px, 2px) rotate(-2deg); }
+    30%  { transform: translate(5px, -2px) rotate(2deg); }
+    45%  { transform: translate(-4px, 1px) rotate(-1deg); }
+    60%  { transform: translate(4px, -1px) rotate(1deg); }
+    75%  { transform: translate(-2px, 1px); }
+}
+.gacha-shake-rare { animation: gachaShakeRare 0.55s ease both; }
+
+/* Spinning suspense on the emoji */
+@keyframes gachaSpinReveal {
+    0%   { transform: scale(0.6) rotateY(0deg);   filter: blur(4px) brightness(0.5); }
+    40%  { transform: scale(1.1) rotateY(180deg);  filter: blur(1px) brightness(1.4); }
+    70%  { transform: scale(1.05) rotateY(300deg); filter: blur(0px) brightness(1.2); }
+    100% { transform: scale(1)   rotateY(360deg);  filter: blur(0px) brightness(1); }
+}
+.gacha-spin-reveal { animation: gachaSpinReveal 0.85s ease both; }
 
 /* Floating sparkles */
 .gacha-result-sparkles {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    overflow: hidden;
+    overflow: visible;
 }
 .gacha-result-sparkles span {
     position: absolute;
-    font-size: 18px;
-    animation: sparkleDrift 2.5s ease-in-out infinite;
+    font-size: 22px;
+    animation: sparkleDrift 2.2s ease-in-out infinite;
     opacity: 0;
 }
-.gacha-result-sparkles span:nth-child(1) { top: 10%; left: 15%; animation-delay: 0s;    }
-.gacha-result-sparkles span:nth-child(2) { top: 20%; right: 12%; animation-delay: 0.4s; }
-.gacha-result-sparkles span:nth-child(3) { bottom: 18%; left: 10%; animation-delay: 0.8s; }
-.gacha-result-sparkles span:nth-child(4) { bottom: 22%; right: 15%; animation-delay: 1.2s; }
-.gacha-result-sparkles span:nth-child(5) { top: 50%; left: 5%;  animation-delay: 1.6s; }
-.gacha-result-sparkles span:nth-child(6) { top: 50%; right: 5%; animation-delay: 2s;   }
+.gacha-result-sparkles span:nth-child(1) { top:  8%; left: 12%;  animation-delay: 0s;    font-size: 20px; }
+.gacha-result-sparkles span:nth-child(2) { top: 18%; right: 10%; animation-delay: 0.35s; font-size: 14px; }
+.gacha-result-sparkles span:nth-child(3) { bottom: 15%; left: 8%;  animation-delay: 0.7s;  font-size: 18px; }
+.gacha-result-sparkles span:nth-child(4) { bottom: 20%; right: 12%; animation-delay: 1.05s; font-size: 16px; }
+.gacha-result-sparkles span:nth-child(5) { top: 48%; left: 3%;   animation-delay: 1.4s;  font-size: 12px; }
+.gacha-result-sparkles span:nth-child(6) { top: 48%; right: 3%;  animation-delay: 1.75s; font-size: 12px; }
 
 @keyframes sparkleDrift {
-    0%   { opacity: 0;   transform: translateY(0) scale(0.5); }
-    30%  { opacity: 0.9; }
-    100% { opacity: 0;   transform: translateY(-40px) scale(1.2); }
+    0%   { opacity: 0;    transform: translateY(0)     scale(0.5) rotate(0deg);   }
+    25%  { opacity: 1;    transform: translateY(-12px) scale(1.1) rotate(20deg);  }
+    60%  { opacity: 0.85; transform: translateY(-28px) scale(1)   rotate(45deg);  }
+    100% { opacity: 0;    transform: translateY(-55px) scale(0.7) rotate(90deg);  }
 }
 
 /* Big reward emoji */
 .gacha-result-emoji {
-    font-size: 72px;
+    font-size: 80px;
     line-height: 1;
-    filter: drop-shadow(0 0 20px currentColor);
+    filter: drop-shadow(0 0 24px currentColor);
+    animation: emojiFloat 2.4s ease-in-out infinite;
+}
+@keyframes emojiFloat {
+    0%, 100% { transform: translateY(0) scale(1);     }
+    50%       { transform: translateY(-8px) scale(1.05); }
 }
 
 /* Reward name */
 .gacha-result-label {
     font-family: var(--font-hud);
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 900;
     letter-spacing: 3px;
+    animation: labelGlow 1.6s ease-in-out infinite alternate;
+}
+@keyframes labelGlow {
+    from { filter: brightness(1); }
+    to   { filter: brightness(1.3) drop-shadow(0 0 8px currentColor); }
 }
 
 /* Sub-text */
@@ -1324,39 +1471,98 @@ kbd {
 
 /* Rarity colours — applied via data-rarity on overlay */
 .gacha-result-overlay[data-rarity="common"]   .gacha-result-label { color: #d0d0e8; text-shadow: 0 0 12px rgba(208,208,232,0.5); }
-.gacha-result-overlay[data-rarity="uncommon"] .gacha-result-label { color: var(--neon-cyan); text-shadow: 0 0 16px rgba(0,240,255,0.7); }
-.gacha-result-overlay[data-rarity="rare"]     .gacha-result-label {
+.gacha-result-overlay[data-rarity="uncommon"] .gacha-result-label { color: var(--neon-cyan); text-shadow: 0 0 20px rgba(0,240,255,0.9); }
+.gacha-result-overlay[data-rarity="uncommon"]::after {
+    background: radial-gradient(ellipse at center, rgba(0,240,255,0.14) 0%, transparent 70%);
+}
+.gacha-result-overlay[data-rarity="rare"] .gacha-result-label {
     background: linear-gradient(90deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff, #c77dff);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    filter: drop-shadow(0 0 12px rgba(255,200,0,0.6));
+    filter: drop-shadow(0 0 14px rgba(255,200,0,0.7));
+    background-size: 200%;
+    animation: rainbowShift 1.5s linear infinite, labelGlow 1.6s ease-in-out infinite alternate;
 }
-.gacha-result-overlay[data-rarity="rare"] .gacha-result-sparkles span { color: gold; }
+@keyframes rainbowShift { to { background-position: 200%; } }
+.gacha-result-overlay[data-rarity="rare"] .gacha-result-sparkles span { color: gold; font-size: 26px; }
+.gacha-result-overlay[data-rarity="rare"]::after {
+    background: radial-gradient(ellipse at center, rgba(255,200,0,0.16) 0%, rgba(176,96,255,0.12) 50%, transparent 75%);
+}
+.gacha-result-overlay[data-rarity="rare"]::before { opacity: 1; border-width: 3px; }
+
+/* ── Cinematic beam (rarity-based flash ray) ── */
+.gacha-beam {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: 28px;
+    animation: beamFade 1.2s ease-out both;
+    z-index: 1;
+}
+.gacha-beam--common   { background: radial-gradient(ellipse at center, rgba(208,208,232,0.35) 0%, transparent 70%); }
+.gacha-beam--uncommon { background: radial-gradient(ellipse at center, rgba(0,240,255,0.45) 0%, transparent 65%); }
+.gacha-beam--rare     { background: radial-gradient(ellipse at center, rgba(255,210,0,0.55) 0%, rgba(176,96,255,0.3) 50%, transparent 70%); }
+@keyframes beamFade {
+    0%   { opacity: 1; transform: scale(0.4); }
+    40%  { opacity: 1; transform: scale(1.1); }
+    100% { opacity: 0; transform: scale(1.4); }
+}
+
+/* ── Screen flash for rare ── */
+.gacha-flash {
+    position: absolute;
+    inset: -4px;
+    background: rgba(255,220,60,0.35);
+    border-radius: 30px;
+    pointer-events: none;
+    animation: flashOut 0.65s ease-out both;
+    z-index: 3;
+}
+@keyframes flashOut {
+    0%   { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* ── CSS particle burst ── */
+.gacha-particle {
+    position: absolute;
+    top: 50%; left: 50%;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    animation: particleBurst var(--dur, 0.9s) ease-out both;
+}
+@keyframes particleBurst {
+    0%   { opacity: 1;   transform: translate(-50%,-50%) rotate(var(--angle)) translateX(0)      scale(1); }
+    80%  { opacity: 0.7; transform: translate(-50%,-50%) rotate(var(--angle)) translateX(var(--dist)) scale(0.7); }
+    100% { opacity: 0;   transform: translate(-50%,-50%) rotate(var(--angle)) translateX(calc(var(--dist)*1.15)) scale(0); }
+}
 
 /* Close / continue button */
 .gacha-result-close-btn {
     margin-top: 8px;
-    padding: 10px 28px;
+    padding: 11px 30px;
     background: transparent;
-    border: 1px solid rgba(255,255,255,0.2);
+    border: 1px solid rgba(176,96,255,0.4);
     border-radius: 20px;
-    color: var(--text-dim);
+    color: #c890ff;
     font-family: var(--font-hud);
     font-size: 10px;
     letter-spacing: 2px;
     cursor: pointer;
-    transition: all 0.2s;
-    animation: pulse 1.8s ease infinite;
+    transition: all 0.25s;
+    animation: closeBtnPulse 1.8s ease infinite;
 }
 .gacha-result-close-btn:hover {
-    border-color: rgba(176,96,255,0.6);
-    color: #c890ff;
-    box-shadow: 0 0 14px rgba(176,96,255,0.3);
+    border-color: rgba(176,96,255,0.8);
+    background: rgba(176,96,255,0.12);
+    box-shadow: 0 0 18px rgba(176,96,255,0.4);
+    transform: scale(1.04);
 }
-@keyframes pulse {
-    0%, 100% { opacity: 0.6; }
-    50%       { opacity: 1; }
+@keyframes closeBtnPulse {
+    0%, 100% { opacity: 0.65; box-shadow: 0 0 6px rgba(176,96,255,0.2); }
+    50%       { opacity: 1;    box-shadow: 0 0 14px rgba(176,96,255,0.45); }
 }
 /* ============================================================
    MUTE BUTTON
