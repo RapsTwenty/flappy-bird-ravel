@@ -653,7 +653,7 @@ kbd {
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(255,255,255,0.06);
     border-radius: 10px;
-    padding: 10px 14px;
+    padding: 6px 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -690,6 +690,63 @@ kbd {
 }
 
 #scoreList li span { display: flex; align-items: center; gap: 8px; }
+
+/* ── Leaderboard avatar layout ── */
+.lb-player-info {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    flex: 1;
+}
+
+.lb-rank-badge {
+    font-size: 14px;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.lb-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(0, 240, 255, 0.25);
+    background: rgba(0, 0, 0, 0.3);
+    flex-shrink: 0;
+    image-rendering: pixelated;
+    box-shadow: 0 0 8px rgba(0, 240, 255, 0.12);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+#scoreList li:hover .lb-avatar {
+    transform: scale(1.12);
+    box-shadow: 0 0 14px rgba(0, 240, 255, 0.35);
+}
+
+#scoreList li:nth-child(1) .lb-avatar {
+    border-color: rgba(245, 208, 0, 0.6);
+    box-shadow: 0 0 10px rgba(245, 208, 0, 0.3);
+}
+
+#scoreList li:nth-child(2) .lb-avatar {
+    border-color: rgba(200, 200, 220, 0.5);
+    box-shadow: 0 0 8px rgba(200, 200, 220, 0.2);
+}
+
+#scoreList li:nth-child(3) .lb-avatar {
+    border-color: rgba(205, 127, 50, 0.5);
+    box-shadow: 0 0 8px rgba(205, 127, 50, 0.2);
+}
+
+.lb-player-name {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80px;
+}
 
 #scoreList li b {
     font-family: var(--font-pixel);
@@ -1195,6 +1252,11 @@ kbd {
     color: #e8a060;
 }
 #mobileScoreList li span { display: flex; align-items: center; gap: 8px; }
+
+/* Mobile mirrors desktop avatar styles */
+#mobileScoreList li:nth-child(1) .lb-avatar { border-color: rgba(245,208,0,0.6); box-shadow: 0 0 10px rgba(245,208,0,0.3); }
+#mobileScoreList li:nth-child(2) .lb-avatar { border-color: rgba(200,200,220,0.5); }
+#mobileScoreList li:nth-child(3) .lb-avatar { border-color: rgba(205,127,50,0.5); }
 #mobileScoreList li b {
     font-family: var(--font-pixel);
     font-size: 10px;

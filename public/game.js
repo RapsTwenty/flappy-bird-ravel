@@ -1424,29 +1424,129 @@ function resetGame() {
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 
+// ── Mini bird avatar renderer ──────────────
+// Draws a 48×48 bird (skin + hat + glasses) onto an offscreen canvas
+// and returns a PNG data-URL so it can be used in <img> tags.
+function drawMiniAvatarToDataURL(skinId, hatId, glassesId) {
+    const SIZE = 48;
+    const oc   = document.createElement('canvas');
+    oc.width   = SIZE;
+    oc.height  = SIZE;
+    const c    = oc.getContext('2d');
+
+    // ── Skin colours ──
+    let skinData = SKINS.find(s => s.id === skinId) || SKINS[0];
+    let bodyColors = skinData.body;
+    if (skinId === 'rainbow') {
+        const t = Date.now() / 800;
+        const h = (t * 60) % 360;
+        bodyColors = [
+            `hsl(${h % 360}, 100%, 65%)`,
+            `hsl(${(h + 40) % 360}, 100%, 50%)`,
+            `hsl(${(h + 80) % 360}, 100%, 35%)`
+        ];
+        skinData = { ...skinData, body: bodyColors, glow: `hsla(${h%360},100%,60%,0.8)`, wing: `hsla(${(h+120)%360},100%,60%,0.7)` };
+    }
+
+    const cx = SIZE / 2 - 2;  // slight left-centre
+    const cy = SIZE / 2 + 4;  // push down to leave hat room
+    const BW = 22, BH = 18;   // bird width/height (matches game scale ~22×18)
+
+    // ── Glow ──
+    c.shadowBlur  = 14;
+    c.shadowColor = skinData.glow || 'rgba(245,208,0,0.7)';
+
+    // ── Body (rounded rect like the real bird) ──
+    const grad = c.createRadialGradient(cx - 4, cy - 4, 2, cx, cy, BW);
+    grad.addColorStop(0,   bodyColors[0]);
+    grad.addColorStop(0.6, bodyColors[1]);
+    grad.addColorStop(1,   bodyColors[2]);
+    c.fillStyle   = grad;
+    c.strokeStyle = bodyColors[0] + '99';
+    c.lineWidth   = 1.5;
+    c.beginPath();
+    c.roundRect(cx - BW / 2, cy - BH / 2, BW, BH, 6);
+    c.fill();
+    c.stroke();
+
+    c.shadowBlur = 0;
+
+    // ── Wing ──
+    c.fillStyle = skinData.wing;
+    c.beginPath();
+    c.ellipse(cx - 4, cy + 3, 7, 4, -0.3, 0, Math.PI * 2);
+    c.fill();
+
+    // ── Eye socket ──
+    c.fillStyle = '#001a40';
+    c.beginPath();
+    c.arc(cx + 5, cy - 3, 4.5, 0, Math.PI * 2);
+    c.fill();
+    // White highlight
+    c.fillStyle = 'white';
+    c.beginPath();
+    c.arc(cx + 6, cy - 4, 2, 0, Math.PI * 2);
+    c.fill();
+    // Pupil
+    c.fillStyle = '#001a40';
+    c.beginPath();
+    c.arc(cx + 6.5, cy - 3.5, 1, 0, Math.PI * 2);
+    c.fill();
+
+    // ── Beak ──
+    c.fillStyle = skinData.beak || '#ff8c00';
+    c.beginPath();
+    c.moveTo(cx + BW / 2 - 2, cy - 1);
+    c.lineTo(cx + BW / 2 + 6, cy + 1);
+    c.lineTo(cx + BW / 2 - 2, cy + 3);
+    c.closePath();
+    c.fill();
+
+    // ── Glasses (on face) ──
+    const glassesItem = GLASSES.find(g => g.id === glassesId);
+    if (glassesItem && glassesItem.drawEmoji) {
+        c.font         = `${Math.round(glassesItem.drawSize * 0.85)}px sans-serif`;
+        c.textAlign    = 'center';
+        c.textBaseline = 'middle';
+        c.fillText(glassesItem.drawEmoji, cx + 5, cy - 3);
+    }
+
+    // ── Hat (above head) ──
+    const hatItem = HATS.find(h => h.id === hatId);
+    if (hatItem && hatItem.drawEmoji) {
+        c.font         = `${Math.round(hatItem.drawSize * 0.9)}px sans-serif`;
+        c.textAlign    = 'center';
+        c.textBaseline = 'bottom';
+        c.fillText(hatItem.drawEmoji, cx, cy - BH / 2 + 2);
+    }
+
+    return oc.toDataURL();
+}
+
 async function loadLeaderboard() {
     try {
-        const res = await fetch(`${URL_API}/api/leaderboard`);
+        const res  = await fetch(`${URL_API}/api/leaderboard`);
         const data = await res.json();
 
-        const best = {};
-        data.forEach(s => {
-            if (!best[s.username] || s.score > best[s.username]) {
-                best[s.username] = s.score;
-            }
-        });
-        const unique = Object.entries(best)
-            .map(([username, score]) => ({ username, score }))
-            .sort((a, b) => b.score - a.score)
-            .slice(0, 10);
-
+        // Server now returns pre-aggregated top-10 with skin/hat/glasses
         const list = document.getElementById("scoreList");
-        list.innerHTML = unique.map((s, i) =>
-            `<li style="animation-delay:${i * 0.06}s">
-                <span>${MEDALS[i] || `#${i+1}`} &nbsp;${s.username}</span>
+        list.innerHTML = data.map((s, i) => {
+            const avatarSrc = drawMiniAvatarToDataURL(
+                s.skin    || 'default',
+                s.hat     || 'hat_none',
+                s.glasses || 'glasses_none'
+            );
+            return `
+            <li style="animation-delay:${i * 0.06}s">
+                <span class="lb-player-info">
+                    <span class="lb-rank-badge">${MEDALS[i] || `#${i+1}`}</span>
+                    <img class="lb-avatar" src="${avatarSrc}" alt="${s.username}" title="${s.username}">
+                    <span class="lb-player-name">${s.username}</span>
+                </span>
                 <b>${s.score}</b>
-            </li>`
-        ).join("") || `<li class="lb-loading">Belum ada data</li>`;
+            </li>`;
+        }).join("") || `<li class="lb-loading">Belum ada data</li>`;
+
     } catch {
         document.getElementById("scoreList").innerHTML = `<li class="lb-loading">Gagal memuat</li>`;
     }

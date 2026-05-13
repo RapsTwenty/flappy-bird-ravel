@@ -1,6 +1,6 @@
 const path = require('path'); // Tambahkan baris ini!
 const express = require('express');
-const { Sequelize, DataTypes } = require('sequelize');
+const { Sequelize, DataTypes, Op } = require('sequelize');
 const cors = require('cors');
 require('dotenv').config();
 
@@ -93,14 +93,48 @@ const Leaderboard = sequelize.define('Leaderboard', {
     timestamps: true
 });
 
-// GET: 10 skor tertinggi
+// GET: 10 skor tertinggi — dengan data inventory (skin, hat, glasses)
 app.get('/api/leaderboard', async (req, res) => {
     try {
-        const topScores = await Leaderboard.findAll({
-            order: [['score', 'DESC']],
-            limit: 10
+        // Ambil semua skor lalu agregasi best-per-user di server
+        const allScores = await Leaderboard.findAll({ order: [['score', 'DESC']] });
+
+        const best = {};
+        allScores.forEach(s => {
+            if (!best[s.username] || s.score > best[s.username]) {
+                best[s.username] = s.score;
+            }
         });
-        res.json(topScores);
+
+        const top10 = Object.entries(best)
+            .map(([username, score]) => ({ username, score }))
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 10);
+
+        // Fetch inventory untuk semua user dalam top 10 sekaligus
+        const usernames = top10.map(u => u.username);
+        const inventories = await Inventory.findAll({
+            where: { username: { [Op.in]: usernames } }
+        });
+
+        const invMap = {};
+        inventories.forEach(inv => {
+            invMap[inv.username] = {
+                skin:    inv.currentSkin    || 'default',
+                hat:     inv.currentHat     || 'hat_none',
+                glasses: inv.currentGlasses || 'glasses_none'
+            };
+        });
+
+        const result = top10.map(u => ({
+            username: u.username,
+            score:    u.score,
+            skin:     invMap[u.username]?.skin    || 'default',
+            hat:      invMap[u.username]?.hat      || 'hat_none',
+            glasses:  invMap[u.username]?.glasses  || 'glasses_none'
+        }));
+
+        res.json(result);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
