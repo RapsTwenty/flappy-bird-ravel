@@ -330,6 +330,12 @@ let multiplierActive       = false;
 let multiplierTimer        = 0;
 const MULTIPLIER_DURATION  = 600;       // 10 sec @ 60 fps
 
+let freezeActive           = false;
+let freezeTimer            = 0;
+let gameSpeedMult          = 1.0;        // 1.0 = normal, FREEZE_SLOW during freeze
+const FREEZE_DURATION      = 300;        // 5 sec @ 60 fps
+const FREEZE_SLOW          = 0.35;       // pipes/spawning at 35% speed during freeze
+
 // Generate background stars
 for (let i = 0; i < 40; i++) {
     stars.push({
@@ -624,6 +630,26 @@ function toggleMute() {
     applyMuteState();
 }
 
+// ══════════════════════════════════════════
+// ★ PAGE VISIBILITY — pause BGM on app switch
+// Fixes: music leaking when user swipes to another app/tab on mobile
+// ══════════════════════════════════════════
+
+document.addEventListener('visibilitychange', () => {
+    if (!bgm) return;
+    if (document.hidden) {
+        bgm.pause();
+    } else if (!isMuted) {
+        bgm.play().catch(() => {});
+    }
+});
+
+// iOS Safari fires pagehide/pageshow instead of (or in addition to) visibilitychange
+window.addEventListener('pagehide', () => { if (bgm) bgm.pause(); });
+window.addEventListener('pageshow',  () => {
+    if (bgm && !isMuted && !document.hidden) bgm.play().catch(() => {});
+});
+
 
 function initGameSession() {
     document.getElementById("authPage").classList.add("hidden");
@@ -901,6 +927,14 @@ const POWERUP_CONFIG = {
         bgColor:   'rgba(245,208,0,0.15)',
         labelText: '×2 SCORE!',
         labelColor:'#f5d000'
+    },
+    freeze: {
+        symbol:    '❄️',
+        color:     '#80e8ff',
+        glowColor: 'rgba(128,232,255,0.9)',
+        bgColor:   'rgba(0,200,255,0.18)',
+        labelText: '❄️ FREEZE!',
+        labelColor:'#80e8ff'
     }
 };
 
@@ -916,6 +950,13 @@ function applyPowerup(type) {
         multiplierTimer  = MULTIPLIER_DURATION;
         sfxX2.currentTime = 0;
         sfxX2.play();
+    } else if (type === 'freeze') {
+        freezeActive  = true;
+        freezeTimer   = FREEZE_DURATION;
+        gameSpeedMult = FREEZE_SLOW;
+        // Reuse shield SFX; swap for assets/freeze.mp3 if you have one
+        sfxShield.currentTime = 0;
+        sfxShield.play();
     }
     // Push floating pickup text (reuses comboTexts system)
     comboTexts.push({
@@ -1021,9 +1062,8 @@ function drawShieldEffect() {
     ctx.restore();
 }
 
-// Draw active powerup indicators (top-left corner of canvas)
 function drawPowerupHUD() {
-    if (!shieldActive && !shieldInvincible && !multiplierActive) return;
+    if (!shieldActive && !shieldInvincible && !multiplierActive && !freezeActive) return;
 
     let hx = 8, hy = 8;
 
@@ -1077,6 +1117,35 @@ function drawPowerupHUD() {
         ctx.fillText(`×2  ${secsLeft}s`, hx + 7, hy + 11);
 
         ctx.restore();
+        hx += 66;
+    }
+
+    // ── Freeze indicator ──
+    if (freezeActive) {
+        const secsLeft = Math.ceil(freezeTimer / 60);
+        const icePulse = 0.6 + 0.4 * Math.sin(Date.now() / 200);
+        ctx.save();
+        ctx.shadowBlur  = 10;
+        ctx.shadowColor = 'rgba(0,230,255,0.8)';
+
+        ctx.fillStyle   = 'rgba(0,200,255,0.15)';
+        ctx.strokeStyle = `rgba(0,230,255,${icePulse})`;
+        ctx.lineWidth   = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(hx, hy, 62, 22, 11);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.font         = '13px sans-serif';
+        ctx.textBaseline = 'middle';
+        ctx.textAlign    = 'left';
+        ctx.fillText('❄️', hx + 4, hy + 11);
+
+        ctx.fillStyle    = '#80e8ff';
+        ctx.font         = `bold 8px 'Orbitron', sans-serif`;
+        ctx.fillText(`${secsLeft}s`, hx + 26, hy + 11);
+
+        ctx.restore();
     }
 }
 
@@ -1098,6 +1167,7 @@ function createPipe() {
         const available = [];
         if (!shieldActive && !shieldInvincible) available.push('shield');
         if (!multiplierActive)                  available.push('multiplier');
+        if (!freezeActive)                      available.push('freeze');
         if (available.length === 0) return;
 
         const type = available[Math.floor(Math.random() * available.length)];
@@ -1190,11 +1260,11 @@ function update() {
     }
 
     // Pipe spawning: time-based so speed is identical at any refresh rate
-    pipeTimer -= dt;
+    pipeTimer -= dt * gameSpeedMult;
     if (pipeTimer <= 0) { createPipe(); pipeTimer = 90; }
 
     pipes.forEach((pipe, index) => {
-        pipe.x -= 2.5 * dt;
+        pipe.x -= 2.5 * dt * gameSpeedMult;
 
         const margin = 3;
         if (bird.x + bird.width - margin > pipe.x &&
@@ -1250,7 +1320,7 @@ function update() {
     }
 
     // ── Move powerups & collect ──
-    powerups.forEach(p => { p.x -= 2.5 * dt; });
+    powerups.forEach(p => { p.x -= 2.5 * dt * gameSpeedMult; });
     powerups = powerups.filter(p => p.x + p.size > -10 && !p.collected);
 
     powerups.forEach(p => {
@@ -1262,6 +1332,16 @@ function update() {
             applyPowerup(p.type);
         }
     });
+
+    // ── Freeze countdown ──
+    if (freezeActive) {
+        freezeTimer -= dt;
+        if (freezeTimer <= 0) {
+            freezeActive  = false;
+            freezeTimer   = 0;
+            gameSpeedMult = 1.0;
+        }
+    }
 
     // ── Floor / ceiling ──
     if (bird.y + bird.height > canvas.height || bird.y < 0) {
@@ -1311,6 +1391,7 @@ function draw() {
     drawShieldEffect();
     drawParticles();
     drawFeverEffect();
+    drawFreezeEffect();
     drawComboTexts();
     drawPowerupHUD();
     drawThemeBanner();
@@ -1767,7 +1848,51 @@ function drawBird() {
     ctx.restore();
 }
 
-function drawPipes() {
+// ══════════════════════════════════════════
+// ★ ICE / FREEZE VISUAL EFFECT
+// ══════════════════════════════════════════
+
+function drawFreezeEffect() {
+    if (!freezeActive) return;
+    const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 280);
+
+    ctx.save();
+
+    // Radial vignette — cool blue tint bleeding in from edges only
+    const vg = ctx.createRadialGradient(
+        canvas.width / 2, canvas.height / 2, canvas.height * 0.22,
+        canvas.width / 2, canvas.height / 2, canvas.height * 0.82
+    );
+    vg.addColorStop(0, 'rgba(0,170,255,0)');
+    vg.addColorStop(1, `rgba(0,170,255,${0.09 + 0.04 * pulse})`);
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Glowing border — pulsing cyan
+    ctx.strokeStyle = `rgba(0,220,255,${0.28 + 0.18 * pulse})`;
+    ctx.lineWidth   = 2.5;
+    ctx.shadowBlur  = 14;
+    ctx.shadowColor = 'rgba(0,220,255,0.6)';
+    ctx.strokeRect(1.5, 1.5, canvas.width - 3, canvas.height - 3);
+
+    // Small drifting ice specks
+    const t = Date.now() / 1000;
+    for (let i = 0; i < 8; i++) {
+        const sx = ((Math.sin(i * 2.4 + t * 0.4) * 0.5 + 0.5) * canvas.width);
+        const sy = ((i / 8 + t * 0.05) % 1) * canvas.height;
+        const sr = 1.5 + Math.sin(i + t) * 0.8;
+        ctx.beginPath();
+        ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(160,240,255,${0.3 + 0.25 * Math.sin(i + t * 2)})`;
+        ctx.shadowBlur  = 6;
+        ctx.shadowColor = 'rgba(0,220,255,0.8)';
+        ctx.fill();
+    }
+
+    ctx.restore();
+}
+
+
     const pc = _getPipeColors();
     pipes.forEach(pipe => {
         const pw = pipe.pw || pipe.width;
@@ -1798,7 +1923,7 @@ function drawPipes() {
         ctx.fillStyle = "rgba(255,255,255,0.07)";
         ctx.fillRect(pipe.x + 8, pipe.y, 6, pipe.height);
     });
-}
+
 
 // ══════════════════════════════════════════
 // GAME LOOP
@@ -1832,6 +1957,9 @@ function gameOver() {
     shieldInvincibleTimer = 0;
     multiplierActive      = false;
     multiplierTimer       = 0;
+    freezeActive          = false;
+    freezeTimer           = 0;
+    gameSpeedMult         = 1.0;
     document.getElementById("gameOverModal").classList.remove("hidden");
     document.getElementById("finalScore").innerText = score;
 
@@ -1886,6 +2014,9 @@ function resetGame() {
     shieldInvincibleTimer = 0;
     multiplierActive      = false;
     multiplierTimer       = 0;
+    freezeActive          = false;
+    freezeTimer           = 0;
+    gameSpeedMult         = 1.0;
     // Apply player's chosen theme
     bgTheme           = currentTheme;
     bgLastTheme       = currentTheme;
