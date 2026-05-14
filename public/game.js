@@ -18,6 +18,7 @@ sfxDeath.volume = 0.8;
 const sfxGacha  = new Audio("assets/gacha.mp3");
 sfxGacha.volume = 0.8;
 
+const sfxFreeze = new Audio("assets/freeze.mp3")
 // ══════════════════════════════════════════
 // ★ SHOP DATA — Skins & Trails
 // ══════════════════════════════════════════
@@ -955,8 +956,8 @@ function applyPowerup(type) {
         freezeTimer   = FREEZE_DURATION;
         gameSpeedMult = FREEZE_SLOW;
         // Reuse shield SFX; swap for assets/freeze.mp3 if you have one
-        sfxShield.currentTime = 0;
-        sfxShield.play();
+        sfxFreeze.currentTime = 0;
+        sfxFreeze.play();
     }
     // Push floating pickup text (reuses comboTexts system)
     comboTexts.push({
