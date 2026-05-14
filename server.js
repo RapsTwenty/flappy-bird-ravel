@@ -148,15 +148,19 @@ app.get('/api/user/:username/stats', async (req, res) => {
         const gamesPlayed = scores.length;
         const totalScore  = scores.reduce((sum, s) => sum + s.score, 0);
 
-        const inv = await Inventory.findOne({ where: { username: req.params.username } });
+        const inv  = await Inventory.findOne({ where: { username: req.params.username } });
+        const user = await User.findOne({ where: { username: req.params.username } });
         res.json({
             username:    req.params.username,
             bestScore,
             gamesPlayed,
             totalScore,
-            skin:    inv?.currentSkin    || 'default',
-            hat:     inv?.currentHat     || 'hat_none',
-            glasses: inv?.currentGlasses || 'glasses_none'
+            coins:       user?.coins        ?? 0,
+            skin:        inv?.currentSkin    || 'default',
+            trail:       inv?.currentTrail   || 'none',
+            hat:         inv?.currentHat     || 'hat_none',
+            glasses:     inv?.currentGlasses || 'glasses_none',
+            ownedItems:  JSON.parse(inv?.ownedItems || '["default","none","hat_none","glasses_none"]'),
         });
     } catch (error) { res.status(500).json({ message: error.message }); }
 });

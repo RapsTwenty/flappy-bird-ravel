@@ -662,7 +662,12 @@ function initGameSession() {
     applyMuteState();
 
     const nameEl = document.getElementById("playerName");
-    if (nameEl) nameEl.textContent = (currentUser || "GUEST").toUpperCase();
+    if (nameEl) {
+        nameEl.textContent = (currentUser || "GUEST").toUpperCase();
+        nameEl.style.cursor = 'pointer';
+        nameEl.title = 'Lihat profil';
+        nameEl.onclick = () => openProfileCard(currentUser, true);
+    }
 
     // Load inventory & coins
     loadInventory();
@@ -2182,6 +2187,8 @@ async function openProfileCard(username, isOwn = false) {
         document.getElementById('profileBestScore').textContent   = data.bestScore   ?? 0;
         document.getElementById('profileGamesPlayed').textContent = data.gamesPlayed ?? 0;
         document.getElementById('profileTotalScore').textContent  = data.totalScore  ?? 0;
+        document.getElementById('profileCoins').textContent       = (data.coins ?? 0).toLocaleString();
+        renderProfileCollection(data.ownedItems || [], data);
     } catch {
         // Fallback: jika fetch gagal, pakai data lokal untuk user sendiri
         if (isOwn) {
@@ -2189,11 +2196,85 @@ async function openProfileCard(username, isOwn = false) {
             document.getElementById('profileBestScore').textContent   = highScore;
             document.getElementById('profileGamesPlayed').textContent = '-';
             document.getElementById('profileTotalScore').textContent  = '-';
+            document.getElementById('profileCoins').textContent       = userCoins.toLocaleString();
+            renderProfileCollection(ownedItems, { skin: currentSkin, trail: currentTrail, hat: currentHat, glasses: currentGlasses });
         }
     } finally {
         spinner.classList.add('hidden');
     }
 }
+
+// ── Render owned-collection section inside profile card ──────────────────────
+function renderProfileCollection(owned, stats) {
+    const container = document.getElementById('profileCollection');
+    if (!container) return;
+
+    const sections = [];
+
+    // Skins (skip 'default' — everyone has it)
+    const mySkins = SKINS.filter(s => s.id !== 'default' && owned.includes(s.id));
+    if (mySkins.length) {
+        sections.push({
+            icon: '\xf0\x9f\x90\xa6', label: 'Skins',
+            items: mySkins.map(s => ({
+                emoji: `<span class="pcoll-dot" style="background:${s.body ? s.body[0] : '#fff'}"></span>`,
+                name:  s.name, active: stats.skin === s.id
+            }))
+        });
+    }
+
+    // Trails (skip 'none')
+    const myTrails = TRAILS.filter(t => t.id !== 'none' && owned.includes(t.id));
+    if (myTrails.length) {
+        sections.push({
+            icon: '\xe2\x9c\xa8', label: 'Trails',
+            items: myTrails.map(t => ({ emoji: t.emoji, name: t.name, active: stats.trail === t.id }))
+        });
+    }
+
+    // Hats (skip 'hat_none')
+    const myHats = HATS.filter(h => h.id !== 'hat_none' && owned.includes(h.id));
+    if (myHats.length) {
+        sections.push({
+            icon: '\xf0\x9f\x8e\xa9', label: 'Topi',
+            items: myHats.map(h => ({ emoji: h.emoji, name: h.name, active: stats.hat === h.id }))
+        });
+    }
+
+    // Glasses (skip 'glasses_none')
+    const myGlasses = GLASSES.filter(g => g.id !== 'glasses_none' && owned.includes(g.id));
+    if (myGlasses.length) {
+        sections.push({
+            icon: '\xf0\x9f\x95\xb6\xef\xb8\x8f', label: 'Kacamata',
+            items: myGlasses.map(g => ({ emoji: g.emoji, name: g.name, active: stats.glasses === g.id }))
+        });
+    }
+
+    if (!sections.length) {
+        container.innerHTML = `<p class="pcoll-empty">\xf0\x9f\x8e\x92 Belum ada koleksi eksklusif</p>`;
+        return;
+    }
+
+    const totalItems = sections.reduce((s, sec) => s + sec.items.length, 0);
+    container.innerHTML = `
+        <div class="pcoll-header">\xf0\x9f\x8e\x92 KOLEKSI <span class="pcoll-count">${totalItems} item</span></div>
+        ${sections.map(sec => `
+            <div class="pcoll-section">
+                <span class="pcoll-label">${sec.icon} ${sec.label}</span>
+                <div class="pcoll-items">
+                    ${sec.items.map(item => `
+                        <div class="pcoll-item${item.active ? ' pcoll-equipped' : ''}" title="${item.name}">
+                            ${item.emoji}
+                            ${item.active ? '<span class="pcoll-active-dot"></span>' : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `).join('')}
+    `;
+}
+
+
 
 function closeProfileCard() {
     document.getElementById('profileCardModal').classList.add('hidden');
@@ -2212,15 +2293,17 @@ async function loadLeaderboard() {
                 s.hat     || 'hat_none',
                 s.glasses || 'glasses_none'
             );
+            const isSelf = s.username === currentUser;
             return `
-            <li style="animation-delay:${i * 0.06}s">
+            <li style="animation-delay:${i * 0.06}s" class="lb-row-clickable${isSelf ? ' lb-row-self' : ''}" onclick="openProfileCard('${s.username}', ${isSelf})" title="Lihat profil ${s.username}">
                 <span class="lb-player-info">
                     <span class="lb-rank-badge">${MEDALS[i] || `#${i+1}`}</span>
-                    <img class="lb-avatar" src="${avatarSrc}" alt="${s.username}" title="${s.username}" onclick="openProfileCard('${s.username}', ${s.username === currentUser})">
-                    <span class="lb-player-name">${s.username}</span>
+                    <img class="lb-avatar" src="${avatarSrc}" alt="${s.username}">
+                    <span class="lb-player-name">${s.username}${isSelf ? ' \xf0\x9f\x91\x91' : ''}</span>
                 </span>
                 <b>${s.score}</b>
             </li>`;
+
         }).join("") || `<li class="lb-loading">Belum ada data</li>`;
 
     } catch {
