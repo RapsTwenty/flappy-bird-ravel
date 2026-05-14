@@ -2160,6 +2160,8 @@ function renderShopItems(tab) {
         updateCoinDisplay();
         return;
     }
+
+    container.innerHTML = items.map((item, idx) => {
         const canAfford = userCoins >= item.price;
 
         // LOGIKA KHUSUS TAB GACHA
@@ -2212,7 +2214,7 @@ function renderShopItems(tab) {
                 </div>
             `;
         }
-    }join('');
+    }).join('');
 
     // Update status tab aktif
     document.getElementById('tabSkins').classList.toggle('active', tab === 'skins');
@@ -2225,7 +2227,7 @@ function renderShopItems(tab) {
     if (tabThemes) tabThemes.classList.toggle('active', false);
 
     updateCoinDisplay();
-
+}
 
 async function handleShopClick(itemId, type) {
     const allItems = [...SKINS, ...TRAILS, ...HATS, ...GLASSES, ...THEMES];
