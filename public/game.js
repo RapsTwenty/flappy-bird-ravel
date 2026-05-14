@@ -1893,6 +1893,7 @@ function drawFreezeEffect() {
 }
 
 
+function drawPipes() {
     const pc = _getPipeColors();
     pipes.forEach(pipe => {
         const pw = pipe.pw || pipe.width;
@@ -1923,7 +1924,7 @@ function drawFreezeEffect() {
         ctx.fillStyle = "rgba(255,255,255,0.07)";
         ctx.fillRect(pipe.x + 8, pipe.y, 6, pipe.height);
     });
-
+}
 
 // ══════════════════════════════════════════
 // GAME LOOP
