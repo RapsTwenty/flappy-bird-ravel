@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kontak — RapsTwenty</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ── VARIABLES ── */
+        :root {
+            --neon-yellow: #f5d000;
+            --neon-cyan:   #00f0ff;
+            --neon-green:  #39ff14;
+            --neon-pink:   #ff2d78;
+            --neon-shop:   #b060ff;
+            --dark-bg:     #080c1a;
+            --dark-card:   #0d1530;
+            --dark-panel:  #111827;
+            --border-glow: rgba(0,240,255,0.25);
+            --text-primary:#e8eaf6;
+            --text-dim:    #7b8ab8;
+            --font-pixel:  'Press Start 2P', monospace;
+            --font-hud:    'Orbitron', sans-serif;
+            --font-body:   'Exo 2', sans-serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--dark-bg);
+            font-family: var(--font-body);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── BG ── */
+        .bg-grid {
+            position: fixed; inset: 0;
+            background-image:
+                linear-gradient(rgba(176,96,255,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(176,96,255,0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+            animation: gridMove 20s linear infinite;
+            pointer-events: none; z-index: 0;
+        }
+        @keyframes gridMove {
+            from { transform: translateY(0); }
+            to   { transform: translateY(40px); }
+        }
+        .bg-particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+        .particle {
+            position: absolute; border-radius: 50%;
+            animation: float linear infinite;
+        }
+        .particle.p-cyan { background: #00f0ff; box-shadow: 0 0 6px #00f0ff; }
+        .particle.p-purple { background: #b060ff; box-shadow: 0 0 6px #b060ff; }
+        @keyframes float {
+            0%   { transform: translateY(0) scale(1);     opacity: 0.3; }
+            50%  { opacity: 0.8; transform: translateY(-60px) scale(1.2); }
+            100% { transform: translateY(-120px) scale(0.8); opacity: 0; }
+        }
+
+        /* ── PAGE ── */
+        .page {
+            position: relative; z-index: 10;
+            max-width: 860px; margin: 0 auto;
+            padding: 48px 24px 80px;
+            animation: fadeUp 0.6s ease both;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── BACK ── */
+        .back-btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-family: var(--font-hud); font-size: 10px; letter-spacing: 2px;
+            color: var(--text-dim); text-decoration: none;
+            border: 1px solid rgba(176,96,255,0.25); border-radius: 20px;
+            padding: 8px 18px; margin-bottom: 40px;
+            transition: all 0.2s;
+        }
+        .back-btn:hover {
+            color: var(--neon-shop); border-color: rgba(176,96,255,0.6);
+            box-shadow: 0 0 14px rgba(176,96,255,0.2);
+        }
+
+        /* ── PROFILE HERO ── */
+        .profile-hero {
+            display: flex; flex-direction: column; align-items: center;
+            text-align: center; margin-bottom: 52px;
+        }
+        .profile-avatar-ring {
+            width: 120px; height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #b060ff, #00f0ff, #f5d000);
+            padding: 3px;
+            margin-bottom: 24px;
+            animation: ringRotate 4s linear infinite;
+            box-shadow: 0 0 30px rgba(176,96,255,0.5), 0 0 60px rgba(0,240,255,0.2);
+        }
+        @keyframes ringRotate {
+            0%   { box-shadow: 0 0 30px rgba(176,96,255,0.6), 0 0 60px rgba(0,240,255,0.2); }
+            50%  { box-shadow: 0 0 30px rgba(0,240,255,0.6), 0 0 60px rgba(245,208,0,0.2); }
+            100% { box-shadow: 0 0 30px rgba(176,96,255,0.6), 0 0 60px rgba(0,240,255,0.2); }
+        }
+        .profile-avatar-inner {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background: var(--dark-card);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 56px;
+            animation: avatarBounce 3s ease-in-out infinite;
+        }
+        @keyframes avatarBounce {
+            0%, 100% { transform: scale(1); }
+            50%       { transform: scale(1.06); }
+        }
+        .profile-name {
+            font-family: var(--font-pixel); font-size: clamp(16px, 4vw, 22px);
+            color: var(--neon-cyan);
+            text-shadow: 0 0 24px rgba(0,240,255,0.8), 0 0 50px rgba(0,240,255,0.3);
+            letter-spacing: 3px; margin-bottom: 8px;
+        }
+        .profile-role {
+            font-family: var(--font-hud); font-size: 10px; letter-spacing: 4px;
+            color: var(--neon-shop); margin-bottom: 16px;
+            text-shadow: 0 0 10px rgba(176,96,255,0.6);
+        }
+        .profile-location {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 13px; color: var(--text-dim);
+            border: 1px solid rgba(0,240,255,0.15); border-radius: 20px;
+            padding: 5px 16px;
+        }
+        .profile-bio {
+            margin-top: 20px;
+            font-size: 15px; line-height: 1.8; color: var(--text-dim);
+            max-width: 560px;
+        }
+
+        /* ── DIVIDER ── */
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(176,96,255,0.3), transparent);
+            margin: 40px 0;
+        }
+
+        /* ── SECTION LABEL ── */
+        .section-label {
+            font-family: var(--font-hud); font-size: 11px; letter-spacing: 4px;
+            color: var(--neon-shop); text-align: center; margin-bottom: 28px;
+            text-shadow: 0 0 10px rgba(176,96,255,0.4);
+        }
+
+        /* ── SKILL CARDS ── */
+        .skill-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px; margin-bottom: 40px;
+        }
+        .skill-card {
+            background: var(--dark-card);
+            border: 1px solid rgba(176,96,255,0.18);
+            border-radius: 16px; padding: 22px 20px;
+            text-align: center; transition: all 0.25s;
+            animation: fadeUp 0.5s ease both;
+        }
+        .skill-card:hover {
+            border-color: rgba(176,96,255,0.45);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 28px rgba(176,96,255,0.12);
+        }
+        .skill-icon { font-size: 30px; display: block; margin-bottom: 10px; }
+        .skill-name {
+            font-family: var(--font-hud); font-size: 10px; letter-spacing: 2px;
+            color: var(--neon-yellow); margin-bottom: 6px;
+        }
+        .skill-level-bar {
+            height: 4px; border-radius: 2px;
+            background: rgba(255,255,255,0.08); margin: 8px 0 4px;
+            overflow: hidden;
+        }
+        .skill-level-fill {
+            height: 100%; border-radius: 2px;
+            background: linear-gradient(90deg, var(--neon-shop), var(--neon-cyan));
+            width: 0; transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+        }
+        .skill-desc { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+
+        /* ── CONTACT LINKS ── */
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px; margin-bottom: 40px;
+        }
+        .contact-card {
+            display: flex; align-items: center; gap: 16px;
+            background: var(--dark-card);
+            border: 1px solid rgba(0,240,255,0.15);
+            border-radius: 16px; padding: 20px 22px;
+            text-decoration: none; color: inherit;
+            transition: all 0.25s; animation: fadeUp 0.5s ease both;
+            cursor: pointer;
+        }
+        .contact-card:hover {
+            border-color: var(--cc-color, rgba(0,240,255,0.5));
+            box-shadow: 0 0 24px color-mix(in srgb, var(--cc-color, #00f0ff) 20%, transparent);
+            transform: translateX(4px);
+        }
+        .contact-card-icon {
+            font-size: 30px; flex-shrink: 0;
+            width: 52px; height: 52px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 14px;
+            background: color-mix(in srgb, var(--cc-color, #00f0ff) 12%, transparent);
+            border: 1px solid color-mix(in srgb, var(--cc-color, #00f0ff) 30%, transparent);
+        }
+        .contact-card-label {
+            font-family: var(--font-hud); font-size: 10px; letter-spacing: 2px;
+            margin-bottom: 4px;
+            color: var(--cc-color, var(--neon-cyan));
+            text-shadow: 0 0 8px color-mix(in srgb, var(--cc-color, #00f0ff) 60%, transparent);
+        }
+        .contact-card-value {
+            font-size: 14px; font-weight: 600; color: var(--text-primary);
+        }
+        .contact-card-sub {
+            font-size: 11px; color: var(--text-dim); margin-top: 2px;
+        }
+        .contact-card-arrow {
+            margin-left: auto; font-size: 18px;
+            color: var(--text-dim); transition: transform 0.2s, color 0.2s;
+            flex-shrink: 0;
+        }
+        .contact-card:hover .contact-card-arrow {
+            transform: translateX(4px);
+            color: var(--cc-color, var(--neon-cyan));
+        }
+
+        /* ── MESSAGE FORM ── */
+        .form-card {
+            background: var(--dark-card);
+            border: 1px solid rgba(176,96,255,0.25);
+            border-radius: 20px; padding: 32px;
+            box-shadow: 0 0 30px rgba(176,96,255,0.08);
+        }
+        .form-title {
+            font-family: var(--font-hud); font-size: 13px; letter-spacing: 3px;
+            color: var(--neon-shop); margin-bottom: 24px; text-align: center;
+        }
+        .form-row { margin-bottom: 18px; }
+        .form-label {
+            display: block;
+            font-family: var(--font-hud); font-size: 9px; letter-spacing: 2px;
+            color: var(--text-dim); margin-bottom: 8px;
+        }
+        .form-input, .form-textarea {
+            width: 100%;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(176,96,255,0.25);
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-family: var(--font-body); font-size: 14px;
+            color: var(--text-primary);
+            outline: none; transition: all 0.2s;
+        }
+        .form-input:focus, .form-textarea:focus {
+            border-color: rgba(176,96,255,0.6);
+            box-shadow: 0 0 0 3px rgba(176,96,255,0.1);
+            background: rgba(176,96,255,0.05);
+        }
+        .form-input::placeholder, .form-textarea::placeholder { color: var(--text-dim); }
+        .form-textarea { resize: vertical; min-height: 120px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 480px) { .form-grid { grid-template-columns: 1fr; } }
+
+        .form-submit {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, rgba(176,96,255,0.2), rgba(0,240,255,0.1));
+            border: 1px solid rgba(176,96,255,0.5);
+            border-radius: 12px;
+            font-family: var(--font-hud); font-size: 12px; letter-spacing: 3px;
+            color: var(--neon-shop); cursor: pointer;
+            transition: all 0.25s; margin-top: 8px;
+        }
+        .form-submit:hover {
+            background: linear-gradient(135deg, rgba(176,96,255,0.35), rgba(0,240,255,0.15));
+            box-shadow: 0 0 24px rgba(176,96,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Toast */
+        #formToast {
+            display: none; margin-top: 14px; text-align: center;
+            padding: 10px 16px; border-radius: 10px;
+            font-family: var(--font-hud); font-size: 10px; letter-spacing: 2px;
+        }
+        #formToast.success {
+            display: block;
+            background: rgba(57,255,20,0.08); border: 1px solid rgba(57,255,20,0.3);
+            color: var(--neon-green);
+        }
+        #formToast.error {
+            display: block;
+            background: rgba(255,45,120,0.08); border: 1px solid rgba(255,45,120,0.3);
+            color: var(--neon-pink);
+        }
+
+        /* ── NAV ── */
+        .page-nav {
+            display: flex; justify-content: center; gap: 16px;
+            flex-wrap: wrap; margin-top: 48px;
+        }
+        .nav-btn {
+            font-family: var(--font-hud); font-size: 10px; letter-spacing: 2px;
+            padding: 12px 24px; border-radius: 20px; border: 1px solid;
+            text-decoration: none; transition: all 0.25s;
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+        .nav-btn.yellow { color: var(--neon-yellow); border-color: rgba(245,208,0,0.4); }
+        .nav-btn.yellow:hover { background: rgba(245,208,0,0.1); box-shadow: 0 0 20px rgba(245,208,0,0.25); transform: translateY(-2px); }
+        .nav-btn.cyan { color: var(--neon-cyan); border-color: rgba(0,240,255,0.4); }
+        .nav-btn.cyan:hover { background: rgba(0,240,255,0.1); box-shadow: 0 0 20px rgba(0,240,255,0.25); transform: translateY(-2px); }
+
+        /* ── FOOTER ── */
+        .page-footer {
+            text-align: center; margin-top: 56px; padding-top: 24px;
+            border-top: 1px solid rgba(176,96,255,0.1);
+        }
+        .page-footer p {
+            font-family: var(--font-hud); font-size: 9px; letter-spacing: 2px;
+            color: var(--text-dim);
+        }
+        .page-footer span { color: var(--neon-shop); }
+
+        /* Available badge */
+        .avail-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            margin-top: 18px;
+            font-family: var(--font-hud); font-size: 9px; letter-spacing: 2px;
+            color: var(--neon-green); border: 1px solid rgba(57,255,20,0.3);
+            background: rgba(57,255,20,0.06); border-radius: 20px; padding: 6px 16px;
+        }
+        .avail-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--neon-green);
+            box-shadow: 0 0 8px var(--neon-green);
+            animation: blink 1.5s ease-in-out infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-particles" id="particles"></div>
+
+<div class="page">
+
+    <!-- Back -->
+    <a href="index.html" class="back-btn">← KEMBALI KE GAME</a>
+
+    <!-- PROFILE HERO -->
+    <div class="profile-hero">
+        <div class="profile-avatar-ring">
+            <div class="profile-avatar-inner">🧑‍💻</div>
+        </div>
+        <div class="profile-name">RAPSTWENTY</div>
+        <div class="profile-role">INDIE DEVELOPER · WEB GAME CREATOR</div>
+        <div class="profile-location">📍 Indonesia</div>
+        <div class="avail-badge">
+            <span class="avail-dot"></span>
+            AVAILABLE FOR COLLABORATION
+        </div>
+        <p class="profile-bio">
+            Halo! Aku Rapstwenty — pengembang indie yang suka bikin hal-hal seru di web. 
+            Flappy Bird Online adalah salah satu proyek passion-ku yang menggabungkan 
+            game arcade klasik dengan fitur sosial modern. 
+            Selalu terbuka untuk ngobrol, kolaborasi, atau sekadar berbagi ide!
+        </p>
+    </div>
+
+    <!-- SKILLS -->
+    <div class="section-label">✦ KEAHLIAN ✦</div>
+    <div class="skill-grid">
+        <div class="skill-card" style="animation-delay:0s">
+            <span class="skill-icon">🌐</span>
+            <div class="skill-name">WEB DEV</div>
+            <div class="skill-level-bar"><div class="skill-level-fill" data-level="88"></div></div>
+            <div class="skill-desc">HTML, CSS, JavaScript — dari UI hingga animasi kompleks.</div>
+        </div>
+        <div class="skill-card" style="animation-delay:0.08s">
+            <span class="skill-icon">⚙️</span>
+            <div class="skill-name">BACKEND</div>
+            <div class="skill-level-bar"><div class="skill-level-fill" data-level="78"></div></div>
+            <div class="skill-desc">Node.js, Express, Sequelize, MySQL — REST API dan database.</div>
+        </div>
+        <div class="skill-card" style="animation-delay:0.16s">
+            <span class="skill-icon">🎮</span>
+            <div class="skill-name">GAME DEV</div>
+            <div class="skill-level-bar"><div class="skill-level-fill" data-level="72"></div></div>
+            <div class="skill-desc">HTML5 Canvas, game loop, collision detection, dan animasi game.</div>
+        </div>
+        <div class="skill-card" style="animation-delay:0.24s">
+            <span class="skill-icon">🎨</span>
+            <div class="skill-name">UI / UX</div>
+            <div class="skill-level-bar"><div class="skill-level-fill" data-level="82"></div></div>
+            <div class="skill-desc">Desain antarmuka neon, responsif, dan animasi CSS yang smooth.</div>
+        </div>
+        <div class="skill-card" style="animation-delay:0.32s">
+            <span class="skill-icon">☁️</span>
+            <div class="skill-name">DEPLOYMENT</div>
+            <div class="skill-level-bar"><div class="skill-level-fill" data-level="70"></div></div>
+            <div class="skill-desc">Railway, Vercel, dan pengelolaan environment variable production.</div>
+        </div>
+        <div class="skill-card" style="animation-delay:0.40s">
+            <span class="skill-icon">🔧</span>
+            <div class="skill-name">TOOLS</div>
+            <div class="skill-level-bar"><div class="skill-level-fill" data-level="80"></div></div>
+            <div class="skill-desc">Git, VS Code, Postman, dan workflow pengembangan modern.</div>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- CONTACT LINKS -->
+    <div class="section-label">✦ HUBUNGI SAYA ✦</div>
+    <div class="contact-grid">
+
+        <a href="mailto:ravelraps@email.com" class="contact-card"
+           style="--cc-color:#00f0ff" title="Email" style="animation-delay:0s">
+            <div class="contact-card-icon">📧</div>
+            <div>
+                <div class="contact-card-label">EMAIL</div>
+                <div class="contact-card-value">rapstwenty@email.com</div>
+                <div class="contact-card-sub">Respons dalam 1–2 hari kerja</div>
+            </div>
+            <span class="contact-card-arrow">→</span>
+        </a>
+
+        <a href="https://github.com/rapstwenty" target="_blank" class="contact-card"
+           style="--cc-color:#e8eaf6" title="GitHub" style="animation-delay:0.06s">
+            <div class="contact-card-icon">🐙</div>
+            <div>
+                <div class="contact-card-label">GITHUB</div>
+                <div class="contact-card-value">github.com/rapstwenty</div>
+                <div class="contact-card-sub">Lihat semua proyek saya</div>
+            </div>
+            <span class="contact-card-arrow">→</span>
+        </a>
+
+        <a href="https://instagram.com/ravel_muhammad" target="_blank" class="contact-card"
+           style="--cc-color:#ff2d78" title="Instagram" style="animation-delay:0.12s">
+            <div class="contact-card-icon">📸</div>
+            <div>
+                <div class="contact-card-label">INSTAGRAM</div>
+                <div class="contact-card-value">@rapstwenty</div>
+                <div class="contact-card-sub">Update project & kehidupan</div>
+            </div>
+            <span class="contact-card-arrow">→</span>
+        </a>
+
+        <a href="https://discord.com/users/rapstwenty" target="_blank" class="contact-card"
+           style="--cc-color:#b060ff" title="Discord" style="animation-delay:0.18s">
+            <div class="contact-card-icon">🎮</div>
+            <div>
+                <div class="contact-card-label">DISCORD</div>
+                <div class="contact-card-value">rapstwenty</div>
+                <div class="contact-card-sub">Chat langsung, paling cepat!</div>
+            </div>
+            <span class="contact-card-arrow">→</span>
+        </a>
+
+        
+        <a href="https://tiktok.com/@rapstwenty" target="_blank" class="contact-card"
+           style="--cc-color:#39ff14" title="TikTok" style="animation-delay:0.30s">
+            <div class="contact-card-icon">🎵</div>
+            <div>
+                <div class="contact-card-label">TIKTOK</div>
+                <div class="contact-card-value">@rapstwenty</div>
+                <div class="contact-card-sub">Konten singkat & seru</div>
+            </div>
+            <span class="contact-card-arrow">→</span>
+        </a>
+
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- CONTACT FORM -->
+    <div class="section-label">✦ KIRIM PESAN ✦</div>
+    <div class="form-card">
+        <div class="form-title">📬 FORM PESAN LANGSUNG</div>
+        <div class="form-grid">
+            <div class="form-row">
+                <label class="form-label">NAMA KAMU</label>
+                <input class="form-input" id="fName" type="text" placeholder="Masukkan namamu...">
+            </div>
+            <div class="form-row">
+                <label class="form-label">EMAIL</label>
+                <input class="form-input" id="fEmail" type="email" placeholder="email@kamu.com">
+            </div>
+        </div>
+        <div class="form-row">
+            <label class="form-label">SUBJEK</label>
+            <input class="form-input" id="fSubject" type="text" placeholder="Topik pesan...">
+        </div>
+        <div class="form-row">
+            <label class="form-label">PESAN</label>
+            <textarea class="form-textarea" id="fMessage" placeholder="Tulis pesanmu di sini..."></textarea>
+        </div>
+        <button class="form-submit" onclick="sendMessage()">✦ KIRIM PESAN ✦</button>
+        <div id="formToast"></div>
+    </div>
+
+    <!-- NAV -->
+    <div class="page-nav">
+        <a href="index.html" class="nav-btn yellow">🐦 MAIN SEKARANG</a>
+        <a href="tentang.html" class="nav-btn cyan">ℹ️ TENTANG GAME</a>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="page-footer">
+        <p>© 2026 <span>RapsTwenty</span> · Built with ❤️ in Indonesia · Flappy Bird Online</p>
+    </div>
+
+</div>
+
+<script>
+    // Particles (mix cyan + purple to match kontak theme)
+    const pc = document.getElementById('particles');
+    for (let i = 0; i < 30; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle ' + (Math.random() > 0.5 ? 'p-cyan' : 'p-purple');
+        p.style.cssText = `
+            left:${Math.random()*100}%;top:${Math.random()*100}%;
+            width:${Math.random()*4+2}px;height:${Math.random()*4+2}px;
+            animation-delay:${Math.random()*8}s;
+            animation-duration:${Math.random()*10+8}s;
+            opacity:${Math.random()*0.5+0.1};`;
+        pc.appendChild(p);
+    }
+
+    // Animate skill bars on scroll / load
+    function animateBars() {
+        document.querySelectorAll('.skill-level-fill').forEach(bar => {
+            const rect = bar.getBoundingClientRect();
+            if (rect.top < window.innerHeight - 40) {
+                bar.style.width = bar.dataset.level + '%';
+            }
+        });
+    }
+    window.addEventListener('scroll', animateBars);
+    setTimeout(animateBars, 400); // initial trigger after paint
+
+    // Contact form (mailto fallback)
+    function sendMessage() {
+        const name    = document.getElementById('fName').value.trim();
+        const email   = document.getElementById('fEmail').value.trim();
+        const subject = document.getElementById('fSubject').value.trim();
+        const message = document.getElementById('fMessage').value.trim();
+        const toast   = document.getElementById('formToast');
+
+        if (!name || !email || !message) {
+            toast.className = 'error';
+            toast.textContent = '⚠ Mohon isi nama, email, dan pesan terlebih dahulu!';
+            return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            toast.className = 'error';
+            toast.textContent = '⚠ Format email tidak valid!';
+            return;
+        }
+
+        const mailBody = `Halo Rapstwenty!%0A%0ANama: ${encodeURIComponent(name)}%0AEmail: ${encodeURIComponent(email)}%0A%0APesan:%0A${encodeURIComponent(message)}`;
+        window.location.href = `mailto:rapstwenty@email.com?subject=${encodeURIComponent(subject || 'Pesan dari ' + name)}&body=${mailBody}`;
+
+        toast.className = 'success';
+        toast.textContent = '✦ Pesan siap dikirim! Terima kasih, ' + name + '!';
+        // Clear form
+        ['fName','fEmail','fSubject','fMessage'].forEach(id => document.getElementById(id).value = '');
+    }
+
+    // Allow Enter key on inputs
+    document.querySelectorAll('.form-input').forEach(inp => {
+        inp.addEventListener('keydown', e => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    });
+
+    // Stagger contact cards
+    document.querySelectorAll('.contact-card').forEach((card, i) => {
+        card.style.animationDelay = `${i * 0.06}s`;
+    });
+</script>
+</body>
+</html>

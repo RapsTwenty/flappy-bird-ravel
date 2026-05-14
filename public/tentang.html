@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tentang — Flappy Bird Online</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ── VARIABLES ── */
+        :root {
+            --neon-yellow: #f5d000;
+            --neon-cyan:   #00f0ff;
+            --neon-green:  #39ff14;
+            --neon-pink:   #ff2d78;
+            --neon-shop:   #b060ff;
+            --dark-bg:     #080c1a;
+            --dark-card:   #0d1530;
+            --dark-panel:  #111827;
+            --border-glow: rgba(0,240,255,0.25);
+            --text-primary:#e8eaf6;
+            --text-dim:    #7b8ab8;
+            --font-pixel:  'Press Start 2P', monospace;
+            --font-hud:    'Orbitron', sans-serif;
+            --font-body:   'Exo 2', sans-serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--dark-bg);
+            font-family: var(--font-body);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── ANIMATED GRID BG ── */
+        .bg-grid {
+            position: fixed; inset: 0;
+            background-image:
+                linear-gradient(rgba(0,240,255,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,240,255,0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+            animation: gridMove 20s linear infinite;
+            pointer-events: none; z-index: 0;
+        }
+        @keyframes gridMove {
+            from { transform: translateY(0); }
+            to   { transform: translateY(40px); }
+        }
+
+        .bg-particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+        .particle {
+            position: absolute; border-radius: 50%;
+            background: var(--neon-cyan);
+            box-shadow: 0 0 6px var(--neon-cyan);
+            animation: float linear infinite;
+        }
+        @keyframes float {
+            0%   { transform: translateY(0) scale(1);     opacity: 0.3; }
+            50%  { opacity: 0.8; transform: translateY(-60px) scale(1.2); }
+            100% { transform: translateY(-120px) scale(0.8); opacity: 0; }
+        }
+
+        /* ── PAGE WRAPPER ── */
+        .page {
+            position: relative; z-index: 10;
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 48px 24px 80px;
+            animation: fadeUp 0.6s ease both;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── BACK BUTTON ── */
+        .back-btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-family: var(--font-hud); font-size: 10px; letter-spacing: 2px;
+            color: var(--text-dim); text-decoration: none;
+            border: 1px solid rgba(0,240,255,0.2); border-radius: 20px;
+            padding: 8px 18px; margin-bottom: 40px;
+            transition: all 0.2s;
+        }
+        .back-btn:hover {
+            color: var(--neon-cyan); border-color: rgba(0,240,255,0.6);
+            box-shadow: 0 0 14px rgba(0,240,255,0.2);
+        }
+
+        /* ── HERO ── */
+        .hero {
+            text-align: center;
+            margin-bottom: 56px;
+        }
+        .hero-bird {
+            font-size: 64px;
+            display: block; margin-bottom: 20px;
+            animation: birdBounce 2s ease-in-out infinite;
+        }
+        @keyframes birdBounce {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50%       { transform: translateY(-12px) rotate(6deg); }
+        }
+        .hero-title {
+            font-family: var(--font-pixel);
+            font-size: clamp(16px, 4vw, 26px);
+            color: var(--neon-yellow);
+            text-shadow: 0 0 24px rgba(245,208,0,0.7), 0 0 50px rgba(245,208,0,0.3);
+            letter-spacing: 3px; line-height: 1.5;
+            margin-bottom: 8px;
+        }
+        .hero-title span { color: var(--neon-cyan); text-shadow: 0 0 24px rgba(0,240,255,0.7); }
+        .hero-badge {
+            display: inline-block;
+            font-family: var(--font-hud); font-size: 10px; letter-spacing: 3px;
+            color: var(--neon-shop); border: 1px solid rgba(176,96,255,0.4);
+            border-radius: 20px; padding: 4px 16px; margin-top: 12px;
+            text-shadow: 0 0 10px rgba(176,96,255,0.6);
+            box-shadow: 0 0 14px rgba(176,96,255,0.15);
+        }
+        .hero-desc {
+            margin-top: 20px;
+            font-size: 15px; line-height: 1.8; color: var(--text-dim);
+            max-width: 600px; margin-inline: auto;
+        }
+
+        /* ── DIVIDER ── */
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0,240,255,0.3), transparent);
+            margin: 40px 0;
+        }
+
+        /* ── SECTION LABEL ── */
+        .section-label {
+            font-family: var(--font-hud); font-size: 11px; letter-spacing: 4px;
+            color: var(--neon-cyan); text-transform: uppercase;
+            text-align: center; margin-bottom: 28px;
+            text-shadow: 0 0 10px rgba(0,240,255,0.4);
+        }
+
+        /* ── CARD ── */
+        .card {
+            background: var(--dark-card);
+            border: 1px solid var(--border-glow);
+            border-radius: 20px;
+            padding: 28px 32px;
+            box-shadow: 0 0 30px rgba(0,240,255,0.07), 0 20px 40px rgba(0,0,0,0.4);
+            backdrop-filter: blur(20px);
+            margin-bottom: 20px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            border-color: rgba(0,240,255,0.45);
+            box-shadow: 0 0 30px rgba(0,240,255,0.14), 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        /* ── FEATURE GRID ── */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+        .feature-card {
+            background: var(--dark-card);
+            border: 1px solid rgba(0,240,255,0.15);
+            border-radius: 16px;
+            padding: 24px 20px;
+            text-align: center;
+            transition: all 0.25s;
+            animation: fadeUp 0.5s ease both;
+        }
+        .feature-card:hover {
+            border-color: rgba(0,240,255,0.4);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 28px rgba(0,240,255,0.12);
+        }
+        .feature-icon { font-size: 36px; display: block; margin-bottom: 12px; }
+        .feature-title {
+            font-family: var(--font-hud); font-size: 11px; letter-spacing: 2px;
+            color: var(--neon-yellow); margin-bottom: 8px;
+            text-shadow: 0 0 8px rgba(245,208,0,0.4);
+        }
+        .feature-desc { font-size: 13px; color: var(--text-dim); line-height: 1.6; }
+
+        /* ── STATS ROW ── */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, rgba(0,240,255,0.06), rgba(176,96,255,0.06));
+            border: 1px solid rgba(0,240,255,0.18);
+            border-radius: 16px; padding: 20px 16px; text-align: center;
+            transition: all 0.25s;
+        }
+        .stat-card:hover {
+            border-color: rgba(245,208,0,0.4);
+            box-shadow: 0 0 20px rgba(245,208,0,0.1);
+            transform: scale(1.03);
+        }
+        .stat-value {
+            font-family: var(--font-pixel); font-size: 20px;
+            color: var(--neon-yellow);
+            text-shadow: 0 0 16px rgba(245,208,0,0.7);
+            display: block; margin-bottom: 6px;
+        }
+        .stat-label {
+            font-family: var(--font-hud); font-size: 9px; letter-spacing: 2px;
+            color: var(--text-dim);
+        }
+
+        /* ── CHANGELOG ── */
+        .changelog-list { list-style: none; }
+        .changelog-item {
+            display: flex; gap: 16px; align-items: flex-start;
+            padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .changelog-item:last-child { border-bottom: none; }
+        .changelog-version {
+            font-family: var(--font-hud); font-size: 9px; letter-spacing: 1px;
+            color: var(--neon-cyan); flex-shrink: 0; min-width: 52px;
+            padding-top: 2px;
+        }
+        .changelog-text { font-size: 13px; color: var(--text-dim); line-height: 1.6; }
+        .changelog-text b { color: var(--text-primary); }
+
+        /* ── TECH STACK ── */
+        .tech-row {
+            display: flex; flex-wrap: wrap; gap: 10px;
+            justify-content: center; margin-top: 12px;
+        }
+        .tech-tag {
+            font-family: var(--font-hud); font-size: 9px; letter-spacing: 2px;
+            padding: 6px 14px; border-radius: 20px; border: 1px solid;
+            transition: all 0.2s;
+        }
+        .tech-tag:hover { transform: translateY(-2px); }
+        .tech-tag.yellow { color: var(--neon-yellow); border-color: rgba(245,208,0,0.35); background: rgba(245,208,0,0.06); }
+        .tech-tag.cyan   { color: var(--neon-cyan);   border-color: rgba(0,240,255,0.35);  background: rgba(0,240,255,0.06); }
+        .tech-tag.purple { color: var(--neon-shop);   border-color: rgba(176,96,255,0.35); background: rgba(176,96,255,0.06); }
+        .tech-tag.green  { color: var(--neon-green);  border-color: rgba(57,255,20,0.35);  background: rgba(57,255,20,0.06); }
+        .tech-tag.pink   { color: var(--neon-pink);   border-color: rgba(255,45,120,0.35); background: rgba(255,45,120,0.06); }
+
+        /* ── CREDIT BOX ── */
+        .credit-box {
+            text-align: center; padding: 32px;
+            background: linear-gradient(135deg, rgba(176,96,255,0.08), rgba(0,240,255,0.05));
+            border: 1px solid rgba(176,96,255,0.25); border-radius: 20px;
+            margin-bottom: 20px;
+        }
+        .credit-avatar {
+            font-size: 56px; display: block; margin-bottom: 12px;
+            animation: birdBounce 2s ease-in-out infinite;
+        }
+        .credit-name {
+            font-family: var(--font-pixel); font-size: 16px;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 20px rgba(0,240,255,0.8);
+            margin-bottom: 6px;
+        }
+        .credit-role {
+            font-family: var(--font-hud); font-size: 10px; letter-spacing: 3px;
+            color: var(--neon-shop); margin-bottom: 16px;
+        }
+        .credit-desc { font-size: 13px; color: var(--text-dim); line-height: 1.7; max-width: 480px; margin: 0 auto; }
+
+        /* ── NAV LINKS (bottom) ── */
+        .page-nav {
+            display: flex; justify-content: center; gap: 16px;
+            flex-wrap: wrap; margin-top: 48px;
+        }
+        .nav-btn {
+            font-family: var(--font-hud); font-size: 10px; letter-spacing: 2px;
+            padding: 12px 24px; border-radius: 20px; border: 1px solid;
+            text-decoration: none; transition: all 0.25s;
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+        .nav-btn.yellow {
+            color: var(--neon-yellow); border-color: rgba(245,208,0,0.4);
+        }
+        .nav-btn.yellow:hover {
+            background: rgba(245,208,0,0.1); box-shadow: 0 0 20px rgba(245,208,0,0.25);
+            transform: translateY(-2px);
+        }
+        .nav-btn.cyan {
+            color: var(--neon-cyan); border-color: rgba(0,240,255,0.4);
+        }
+        .nav-btn.cyan:hover {
+            background: rgba(0,240,255,0.1); box-shadow: 0 0 20px rgba(0,240,255,0.25);
+            transform: translateY(-2px);
+        }
+
+        /* ── FOOTER ── */
+        .page-footer {
+            text-align: center; margin-top: 56px; padding-top: 24px;
+            border-top: 1px solid rgba(0,240,255,0.08);
+        }
+        .page-footer p {
+            font-family: var(--font-hud); font-size: 9px; letter-spacing: 2px;
+            color: var(--text-dim);
+        }
+        .page-footer span { color: var(--neon-cyan); }
+    </style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-particles" id="particles"></div>
+
+<div class="page">
+
+    <!-- Back -->
+    <a href="index.html" class="back-btn">← KEMBALI KE GAME</a>
+
+    <!-- HERO -->
+    <div class="hero">
+        <span class="hero-bird">🐦</span>
+        <h1 class="hero-title">FLAPPY <span>BIRD</span><br>ONLINE</h1>
+        <span class="hero-badge">ONLINE EDITION · v1.0.0</span>
+        <p class="hero-desc">
+            Game arcade berbasis web yang terinspirasi dari Flappy Bird klasik, 
+            kini hadir dengan fitur multiplayer online, sistem leaderboard real-time, 
+            skin kustomisasi, dan sistem gacha yang seru — bisa dimainkan langsung di browser.
+        </p>
+    </div>
+
+    <!-- STATS -->
+    <div class="section-label">✦ STATISTIK GAME ✦</div>
+    <div class="stats-row">
+        <div class="stat-card">
+            <span class="stat-value">∞</span>
+            <span class="stat-label">LEVEL</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value">10</span>
+            <span class="stat-label">TOP PLAYERS</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value">20+</span>
+            <span class="stat-label">SKINS & ITEM</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value">24/7</span>
+            <span class="stat-label">ONLINE</span>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- FEATURES -->
+    <div class="section-label">✦ FITUR UNGGULAN ✦</div>
+    <div class="feature-grid">
+        <div class="feature-card" style="animation-delay:0s">
+            <span class="feature-icon">🏆</span>
+            <div class="feature-title">LEADERBOARD</div>
+            <div class="feature-desc">Bersaing dengan pemain lain secara real-time. Top 10 diperbarui setiap sesi selesai.</div>
+        </div>
+        <div class="feature-card" style="animation-delay:0.08s">
+            <span class="feature-icon">🎨</span>
+            <div class="feature-title">KUSTOMISASI</div>
+            <div class="feature-desc">Pilih skin burung, trail efek, topi, dan kacamata untuk tampil beda dari pemain lain.</div>
+        </div>
+        <div class="feature-card" style="animation-delay:0.16s">
+            <span class="feature-icon">🎁</span>
+            <div class="feature-title">SISTEM GACHA</div>
+            <div class="feature-desc">Putar gacha dengan koin yang kamu kumpulkan dari permainan. Dapatkan item langka!</div>
+        </div>
+        <div class="feature-card" style="animation-delay:0.24s">
+            <span class="feature-icon">🪙</span>
+            <div class="feature-title">SISTEM KOIN</div>
+            <div class="feature-desc">Setiap 100 skor = 1 koin. Kumpulkan koin untuk beli item ekslusif di toko.</div>
+        </div>
+        <div class="feature-card" style="animation-delay:0.32s">
+            <span class="feature-icon">📱</span>
+            <div class="feature-title">MOBILE READY</div>
+            <div class="feature-desc">Desain responsif yang dapat dimainkan di HP maupun PC tanpa install aplikasi.</div>
+        </div>
+        <div class="feature-card" style="animation-delay:0.40s">
+            <span class="feature-icon">🔐</span>
+            <div class="feature-title">AKUN ONLINE</div>
+            <div class="feature-desc">Daftar dan login untuk menyimpan progress, koin, dan koleksi item kamu secara permanen.</div>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- CARA BERMAIN -->
+    <div class="section-label">✦ CARA BERMAIN ✦</div>
+    <div class="card">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap:24px; text-align:center;">
+            <div>
+                <div style="font-size:32px; margin-bottom:10px;">1️⃣</div>
+                <div style="font-family:var(--font-hud); font-size:10px; letter-spacing:2px; color:var(--neon-yellow); margin-bottom:8px;">DAFTAR / LOGIN</div>
+                <div style="font-size:13px; color:var(--text-dim); line-height:1.6;">Buat akun atau login untuk menyimpan skor dan koin kamu.</div>
+            </div>
+            <div>
+                <div style="font-size:32px; margin-bottom:10px;">2️⃣</div>
+                <div style="font-family:var(--font-hud); font-size:10px; letter-spacing:2px; color:var(--neon-yellow); margin-bottom:8px;">TERBANG!</div>
+                <div style="font-size:13px; color:var(--text-dim); line-height:1.6;">Tekan SPACE / ↑ di keyboard atau tap layar untuk menerbangkan burung.</div>
+            </div>
+            <div>
+                <div style="font-size:32px; margin-bottom:10px;">3️⃣</div>
+                <div style="font-family:var(--font-hud); font-size:10px; letter-spacing:2px; color:var(--neon-yellow); margin-bottom:8px;">KUMPULKAN KOIN</div>
+                <div style="font-size:13px; color:var(--text-dim); line-height:1.6;">Setiap pipa dilewati = +100 skor. Skor 100 = 1 koin.</div>
+            </div>
+            <div>
+                <div style="font-size:32px; margin-bottom:10px;">4️⃣</div>
+                <div style="font-family:var(--font-hud); font-size:10px; letter-spacing:2px; color:var(--neon-yellow); margin-bottom:8px;">BELANJA & GACHA</div>
+                <div style="font-size:13px; color:var(--text-dim); line-height:1.6;">Gunakan koin di Shop untuk beli skin dan aksesori keren.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- TECH STACK -->
+    <div class="section-label">✦ TEKNOLOGI ✦</div>
+    <div class="card" style="text-align:center;">
+        <p style="font-size:13px; color:var(--text-dim); margin-bottom:20px; line-height:1.7;">
+            Dibangun dengan teknologi web modern — ringan, cepat, dan bisa diakses dari mana saja.
+        </p>
+        <div class="tech-row">
+            <span class="tech-tag yellow">HTML5 Canvas</span>
+            <span class="tech-tag cyan">JavaScript ES6+</span>
+            <span class="tech-tag purple">CSS3 Animations</span>
+            <span class="tech-tag green">Node.js</span>
+            <span class="tech-tag pink">Express.js</span>
+            <span class="tech-tag cyan">MySQL</span>
+            <span class="tech-tag purple">Sequelize ORM</span>
+            <span class="tech-tag yellow">Railway Deploy</span>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- CHANGELOG -->
+    <div class="section-label">✦ CHANGELOG ✦</div>
+    <div class="card">
+        <ul class="changelog-list">
+            <li class="changelog-item">
+                <span class="changelog-version">v1.0.0</span>
+                <span class="changelog-text"><b>Launch!</b> Rilis perdana Flappy Bird Online dengan sistem login, leaderboard, dan gameplay dasar.</span>
+            </li>
+            <li class="changelog-item">
+                <span class="changelog-version">v1.1.0</span>
+                <span class="changelog-text"><b>Shop & Coins</b> — Sistem koin, toko skin, trail, topi, dan kacamata ditambahkan.</span>
+            </li>
+            <li class="changelog-item">
+                <span class="changelog-version">v1.2.0</span>
+                <span class="changelog-text"><b>Gacha System</b> — Sistem gacha dengan rarity common / uncommon / rare beserta animasi reveal yang dramatis.</span>
+            </li>
+            <li class="changelog-item">
+                <span class="changelog-version">v1.3.0</span>
+                <span class="changelog-text"><b>Avatar Leaderboard</b> — Tampilan mini avatar burung di leaderboard menampilkan set skin aktif pemain.</span>
+            </li>
+            <li class="changelog-item">
+                <span class="changelog-version">v1.4.0</span>
+                <span class="changelog-text"><b>Score Rebalance</b> — Skor per pipa diubah dari 5 → 100. Rasio koin diperbarui menjadi 100:1.</span>
+            </li>
+        </ul>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- CREDIT -->
+    <div class="section-label">✦ DIBUAT OLEH ✦</div>
+    <div class="credit-box">
+        <span class="credit-avatar">🧑‍💻</span>
+        <div class="credit-name">RAPSTWENTY</div>
+        <div class="credit-role">GAME DEVELOPER · DESIGNER</div>
+        <p class="credit-desc">
+            Pengembang indie dari Indonesia yang membangun Flappy Bird Online sebagai proyek eksplorasi 
+            web game dengan fitur sosial dan kustomisasi. Passion di bidang web development, 
+            game design, dan UI/UX.
+        </p>
+    </div>
+
+    <!-- NAV -->
+    <div class="page-nav">
+        <a href="index.html" class="nav-btn yellow">🐦 MAIN SEKARANG</a>
+        <a href="kontak.html" class="nav-btn cyan">📬 KONTAK</a>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="page-footer">
+        <p>© 2026 <span>RapsTwenty</span> · Flappy Bird Online </p>
+    </div>
+
+</div>
+
+<script>
+    // Particles
+    const pc = document.getElementById('particles');
+    for (let i = 0; i < 30; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.cssText = `
+            left:${Math.random()*100}%;top:${Math.random()*100}%;
+            width:${Math.random()*4+2}px;height:${Math.random()*4+2}px;
+            animation-delay:${Math.random()*8}s;
+            animation-duration:${Math.random()*10+8}s;
+            opacity:${Math.random()*0.5+0.1};`;
+        pc.appendChild(p);
+    }
+
+    // Animate stat counters
+    document.querySelectorAll('.stat-value').forEach(el => {
+        const target = el.textContent.trim();
+        if (/^\d+$/.test(target)) {
+            const end = parseInt(target);
+            let cur = 0;
+            const step = Math.ceil(end / 40);
+            const iv = setInterval(() => {
+                cur = Math.min(cur + step, end);
+                el.textContent = cur;
+                if (cur >= end) clearInterval(iv);
+            }, 30);
+        }
+    });
+
+    // Stagger feature cards
+    document.querySelectorAll('.feature-card').forEach((card, i) => {
+        card.style.animationDelay = `${i * 0.08}s`;
+    });
+</script>
+</body>
+</html>
