@@ -197,6 +197,105 @@ let clouds       = [];
 let particles    = [];
 let trailParticles = [];
 
+// ══════════════════════════════════════════
+// ★ BACKGROUND THEME SYSTEM
+// ══════════════════════════════════════════
+// Thresholds
+const THEME_CYBERPUNK_SCORE = 3000;
+const THEME_SPACE_SCORE     = 10000;
+
+let bgTheme          = 'default';   // 'default' | 'cyberpunk' | 'space'
+let bgTransitionAlpha = 0;           // 0 → 1 fade-in for current theme
+let bgLastTheme      = 'default';
+
+// ── CYBERPUNK: parallax building layers ──
+// layer 0 = far (slowest), layer 1 = mid, layer 2 = near (fastest)
+const CITY_LAYERS = [
+    { speed: 0.35, buildings: [] },
+    { speed: 0.75, buildings: [] },
+    { speed: 1.40, buildings: [] }
+];
+
+function _buildCityLayer(layer, layerIdx) {
+    const W = canvas.width;
+    const heights = layerIdx === 0
+        ? [80, 100, 70, 110, 90, 75, 95]    // far: shorter, wider
+        : layerIdx === 1
+        ? [140, 160, 120, 180, 150, 130]     // mid: medium
+        : [200, 230, 190, 250, 220, 175];    // near: tallest
+
+    let x = 0;
+    // Fill canvas + extra buffer so layer loops seamlessly
+    while (x < W + 60) {
+        const w    = 28 + Math.random() * (layerIdx === 2 ? 20 : 32);
+        const h    = heights[Math.floor(Math.random() * heights.length)] + Math.random() * 20;
+        const wins = [];
+        // Generate windows grid
+        const cols = Math.floor(w / 9);
+        const rows = Math.floor(h / 14);
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                if (Math.random() < 0.65) {
+                    const wColors = ['#ffe8a0','#fffacc','#a0d8ff','#d0b0ff','#80ffee','#ff90c8'];
+                    wins.push({
+                        ox: 4 + c * 9, oh: 4 + r * 14, ww: 5, wh: 7,
+                        lit:   Math.random() < 0.7,
+                        color: wColors[Math.floor(Math.random() * wColors.length)],
+                        blink: Math.random() < 0.08,     // rare blink
+                        blinkTimer: Math.random() * 200
+                    });
+                }
+            }
+        }
+        layer.buildings.push({ x, w, h, wins });
+        x += w + (Math.random() * 4);
+    }
+    layer._totalW = x; // cache total width for wrapping
+}
+
+// ── SPACE: nebula puffs, deep stars, meteors ──
+let nebulaParticles = [];
+let deepStars       = [];
+let meteors         = [];
+let meteorTimer     = 0;
+
+function _initSpaceAssets() {
+    // Dense star field
+    deepStars = [];
+    for (let i = 0; i < 110; i++) {
+        deepStars.push({
+            x:       Math.random() * canvas.width,
+            y:       Math.random() * canvas.height * 0.92,
+            r:       Math.random() * 1.8 + 0.2,
+            alpha:   Math.random() * 0.7 + 0.2,
+            twinkle: Math.random() * Math.PI * 2,
+            speed:   Math.random() * 0.02 + 0.005,
+            color:   Math.random() < 0.15
+                ? `hsl(${200 + Math.random()*80},80%,85%)`
+                : 'white'
+        });
+    }
+    // Nebula puffs
+    nebulaParticles = [];
+    const nebColors = [
+        'rgba(200,80,255,0.06)','rgba(80,200,255,0.07)','rgba(255,80,160,0.05)',
+        'rgba(100,80,255,0.06)','rgba(60,240,200,0.05)','rgba(255,140,80,0.04)'
+    ];
+    for (let i = 0; i < 18; i++) {
+        nebulaParticles.push({
+            x:     Math.random() * canvas.width,
+            y:     Math.random() * canvas.height * 0.8,
+            rx:    60 + Math.random() * 90,
+            ry:    30 + Math.random() * 50,
+            rot:   Math.random() * Math.PI,
+            color: nebColors[Math.floor(Math.random() * nebColors.length)],
+            drift: Math.random() * 0.12 + 0.03
+        });
+    }
+    meteors = [];
+    meteorTimer = 0;
+}
+
 // \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 // \u2605 DELTA TIME \u2014 frame-rate independent physics
 // \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
@@ -246,6 +345,12 @@ for (let i = 0; i < 4; i++) {
         speed: Math.random() * 0.3 + 0.1
     });
 }
+
+// ── Initialize Cyberpunk city layers ──
+CITY_LAYERS.forEach((layer, idx) => _buildCityLayer(layer, idx));
+
+// ── Initialize Space assets ──
+_initSpaceAssets();
 
 // ══════════════════════════════════════════
 // ★ COIN SYSTEM — server + localStorage fallback
@@ -1005,11 +1110,97 @@ function update() {
     bird.velocity += bird.gravity * dt;
     bird.y        += bird.velocity * dt;
 
+    // ── THEME TRANSITION based on score ──
+    const targetTheme = score >= THEME_SPACE_SCORE
+        ? 'space'
+        : score >= THEME_CYBERPUNK_SCORE
+        ? 'cyberpunk'
+        : 'default';
+
+    if (targetTheme !== bgTheme) {
+        bgLastTheme       = bgTheme;
+        bgTheme           = targetTheme;
+        bgTransitionAlpha = 0;
+        // Re-seed space assets when entering space
+        if (bgTheme === 'space') _initSpaceAssets();
+        // Show banner
+        if (bgTheme === 'cyberpunk') {
+            _triggerThemeBanner('⚡ CYBERPUNK CITY', 'SCORE 3000 — WELCOME TO THE NEON DISTRICT', '#b060ff');
+        } else if (bgTheme === 'space') {
+            _triggerThemeBanner('🌌 DEEP SPACE', 'SCORE 10000 — ENTERING THE NEBULA ZONE', '#00f0ff');
+        }
+    }
+    if (bgTransitionAlpha < 1) {
+        bgTransitionAlpha = Math.min(1, bgTransitionAlpha + 0.012 * dt);
+    }
+
     clouds.forEach(c => {
         c.x -= c.speed * dt;
         if (c.x + c.w < 0) c.x = canvas.width + 20;
     });
     stars.forEach(s => { s.twinkle += 0.05 * dt; });
+
+    // ── Cyberpunk: scroll building layers ──
+    if (bgTheme === 'cyberpunk' || bgLastTheme === 'cyberpunk') {
+        CITY_LAYERS.forEach(layer => {
+            layer.buildings.forEach(b => {
+                b.x -= layer.speed * dt;
+            });
+            // Wrap buildings that scroll off-left back to the right
+            const totalW = layer._totalW;
+            layer.buildings.forEach(b => {
+                if (b.x + b.w < -10) b.x += totalW;
+            });
+            // Flicker windows
+            layer.buildings.forEach(b => {
+                b.wins.forEach(w => {
+                    if (w.blink) {
+                        w.blinkTimer -= dt;
+                        if (w.blinkTimer <= 0) {
+                            w.lit = !w.lit;
+                            w.blinkTimer = 30 + Math.random() * 180;
+                        }
+                    }
+                });
+            });
+        });
+    }
+
+    // ── Space: drift nebula, twinkle deep stars, spawn meteors ──
+    if (bgTheme === 'space' || bgLastTheme === 'space') {
+        deepStars.forEach(s => {
+            s.twinkle += s.speed * dt;
+            s.x -= 0.18 * dt; // very slow parallax drift
+            if (s.x < -2) s.x = canvas.width + 2;
+        });
+        nebulaParticles.forEach(n => {
+            n.x -= n.drift * dt;
+            if (n.x + n.rx < 0) n.x = canvas.width + n.rx;
+        });
+        meteorTimer -= dt;
+        if (meteorTimer <= 0) {
+            meteorTimer = 180 + Math.random() * 300; // ~3–8s between meteors
+            const len = 60 + Math.random() * 80;
+            meteors.push({
+                x:     canvas.width + len,
+                y:     Math.random() * canvas.height * 0.5,
+                vx:    -(5 + Math.random() * 4),
+                vy:    1.5 + Math.random() * 2,
+                len,
+                alpha: 1,
+                life:  1,
+                decay: 0.012 + Math.random() * 0.01,
+                color: Math.random() < 0.4 ? '#c0e0ff' : '#fffaaa'
+            });
+        }
+        meteors = meteors.filter(m => m.life > 0);
+        meteors.forEach(m => {
+            m.x    += m.vx * dt;
+            m.y    += m.vy * dt;
+            m.life -= m.decay * dt;
+            m.alpha = m.life;
+        });
+    }
 
     // Pipe spawning: time-based so speed is identical at any refresh rate
     pipeTimer -= dt;
@@ -1135,9 +1326,31 @@ function draw() {
     drawFeverEffect();
     drawComboTexts();
     drawPowerupHUD();
+    drawThemeBanner();
 }
 
+// ── drawBackground: dispatches to correct theme with crossfade ──
 function drawBackground() {
+    if (bgTheme === 'default' || bgTransitionAlpha >= 1 && bgTheme === 'default') {
+        _drawBgDefault();
+        return;
+    }
+    // Draw the OLD theme first, then blend the NEW theme on top
+    if (bgLastTheme === 'cyberpunk') _drawBgCyberpunk();
+    else if (bgLastTheme === 'space') _drawBgSpace();
+    else _drawBgDefault();
+
+    ctx.save();
+    ctx.globalAlpha = bgTransitionAlpha;
+    if (bgTheme === 'cyberpunk') _drawBgCyberpunk();
+    else if (bgTheme === 'space') _drawBgSpace();
+    else _drawBgDefault();
+    ctx.restore();
+    ctx.globalAlpha = 1;
+}
+
+// ── DEFAULT THEME ──
+function _drawBgDefault() {
     let skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
     skyGrad.addColorStop(0, "#07091a");
     skyGrad.addColorStop(0.6, "#0d1640");
@@ -1156,29 +1369,17 @@ function drawBackground() {
 
     // Moon
     ctx.fillStyle = "rgba(240,240,200,0.9)";
-    ctx.shadowBlur = 20;
-    ctx.shadowColor = "rgba(240,240,150,0.5)";
-    ctx.beginPath();
-    ctx.arc(canvas.width - 50, 45, 18, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.shadowBlur = 20; ctx.shadowColor = "rgba(240,240,150,0.5)";
+    ctx.beginPath(); ctx.arc(canvas.width - 50, 45, 18, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = "#0d1640";
-    ctx.beginPath();
-    ctx.arc(canvas.width - 43, 40, 15, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(canvas.width - 43, 40, 15, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
 
-    // Clouds
     clouds.forEach(c => {
         ctx.fillStyle = "rgba(30,55,100,0.5)";
-        ctx.beginPath();
-        ctx.ellipse(c.x, c.y, c.w / 2, 14, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.ellipse(c.x - c.w * 0.2, c.y + 5, c.w * 0.35, 11, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.ellipse(c.x + c.w * 0.2, c.y + 4, c.w * 0.3, 10, 0, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.beginPath(); ctx.ellipse(c.x, c.y, c.w / 2, 14, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(c.x - c.w * 0.2, c.y + 5, c.w * 0.35, 11, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(c.x + c.w * 0.2, c.y + 4, c.w * 0.3, 10, 0, 0, Math.PI * 2); ctx.fill();
     });
 
     // Ground glow
@@ -1187,13 +1388,311 @@ function drawBackground() {
     groundGrad.addColorStop(1, "rgba(57,255,20,0.12)");
     ctx.fillStyle = groundGrad;
     ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
+    ctx.strokeStyle = "rgba(57,255,20,0.3)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, canvas.height - 1); ctx.lineTo(canvas.width, canvas.height - 1); ctx.stroke();
+}
 
-    ctx.strokeStyle = "rgba(57,255,20,0.3)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, canvas.height - 1);
-    ctx.lineTo(canvas.width, canvas.height - 1);
-    ctx.stroke();
+// ── CYBERPUNK CITYSCAPE THEME ──
+function _drawBgCyberpunk() {
+    // Sky gradient — deep purple/blue
+    let skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    skyGrad.addColorStop(0,    "#050010");
+    skyGrad.addColorStop(0.45, "#0a0035");
+    skyGrad.addColorStop(0.75, "#150050");
+    skyGrad.addColorStop(0.88, "#2a0040");
+    skyGrad.addColorStop(1,    "#3d0060");
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Distant haze glow on horizon
+    const hazeGrad = ctx.createLinearGradient(0, canvas.height * 0.55, 0, canvas.height);
+    hazeGrad.addColorStop(0, "rgba(160,0,255,0)");
+    hazeGrad.addColorStop(0.6, "rgba(160,0,255,0.08)");
+    hazeGrad.addColorStop(1,   "rgba(255,0,160,0.14)");
+    ctx.fillStyle = hazeGrad;
+    ctx.fillRect(0, canvas.height * 0.55, canvas.width, canvas.height * 0.45);
+
+    // Neon moon / city light dome on horizon
+    ctx.save();
+    ctx.shadowBlur  = 60;
+    ctx.shadowColor = "rgba(180,0,255,0.5)";
+    const moonGrad = ctx.createRadialGradient(canvas.width * 0.65, canvas.height * 0.35, 4, canvas.width * 0.65, canvas.height * 0.35, 22);
+    moonGrad.addColorStop(0, "rgba(220,160,255,1)");
+    moonGrad.addColorStop(0.5, "rgba(160,80,255,0.8)");
+    moonGrad.addColorStop(1,   "rgba(80,0,180,0)");
+    ctx.fillStyle = moonGrad;
+    ctx.beginPath(); ctx.arc(canvas.width * 0.65, canvas.height * 0.35, 22, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // Faint stars in sky
+    stars.forEach(s => {
+        if (s.y > canvas.height * 0.5) return;
+        const a = s.alpha * 0.35 * (0.5 + 0.5 * Math.sin(s.twinkle));
+        ctx.fillStyle = `rgba(200,150,255,${a})`;
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r * 0.7, 0, Math.PI * 2); ctx.fill();
+    });
+
+    // ── Parallax building layers (back → front) ──
+    const GROUND_Y = canvas.height;    // buildings sit on bottom
+    const layerAlphas = [0.35, 0.55, 0.80];
+    const layerColors = [
+        { body:'#10002a', edge:'rgba(160,0,255,0.25)' },
+        { body:'#180040', edge:'rgba(200,0,255,0.35)' },
+        { body:'#220050', edge:'rgba(0,200,255,0.45)' }
+    ];
+
+    CITY_LAYERS.forEach((layer, idx) => {
+        ctx.save();
+        ctx.globalAlpha = layerAlphas[idx];
+        const col = layerColors[idx];
+
+        layer.buildings.forEach(b => {
+            const bx = b.x;
+            const by = GROUND_Y - b.h;
+
+            // Building body
+            ctx.fillStyle = col.body;
+            ctx.fillRect(bx, by, b.w, b.h);
+
+            // Edge glow
+            ctx.strokeStyle = col.edge;
+            ctx.lineWidth   = 1;
+            ctx.strokeRect(bx, by, b.w, b.h);
+
+            // Windows — only draw on layers 1 & 2 for perf
+            if (idx >= 1) {
+                b.wins.forEach(w => {
+                    if (!w.lit) return;
+                    ctx.fillStyle = w.color;
+                    ctx.globalAlpha = layerAlphas[idx] * (0.6 + 0.4 * Math.sin(frame * 0.05 + w.blinkTimer));
+                    ctx.fillRect(bx + w.ox, by + w.oh, w.ww, w.wh);
+                });
+                ctx.globalAlpha = layerAlphas[idx];
+            }
+
+            // Antenna on some near buildings
+            if (idx === 2 && b.w > 35) {
+                ctx.strokeStyle = 'rgba(255,0,120,0.5)';
+                ctx.lineWidth = 1.5;
+                const ax = bx + b.w / 2;
+                ctx.beginPath(); ctx.moveTo(ax, by); ctx.lineTo(ax, by - 18); ctx.stroke();
+                // Blinking red dot on top
+                if (Math.floor(Date.now() / 600) % 2 === 0) {
+                    ctx.fillStyle = 'rgba(255,0,80,0.9)';
+                    ctx.shadowBlur = 8; ctx.shadowColor = 'rgba(255,0,80,1)';
+                    ctx.beginPath(); ctx.arc(ax, by - 18, 2.5, 0, Math.PI * 2); ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+            }
+        });
+        ctx.restore();
+    });
+
+    // Ground / floor neon line
+    const streetGrad = ctx.createLinearGradient(0, canvas.height - 50, 0, canvas.height);
+    streetGrad.addColorStop(0, "rgba(180,0,255,0)");
+    streetGrad.addColorStop(1, "rgba(180,0,255,0.18)");
+    ctx.fillStyle = streetGrad;
+    ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
+
+    // Neon floor line
+    ctx.save();
+    ctx.shadowBlur  = 14;
+    ctx.shadowColor = "rgba(0,200,255,0.8)";
+    ctx.strokeStyle = "rgba(0,200,255,0.55)";
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath(); ctx.moveTo(0, canvas.height - 1); ctx.lineTo(canvas.width, canvas.height - 1); ctx.stroke();
+
+    // Reflective puddle strips on ground
+    for (let i = 0; i < 5; i++) {
+        const px = (canvas.width / 5) * i + Math.sin(frame * 0.01 + i) * 6;
+        ctx.strokeStyle = `rgba(${i%2===0?'180,0,255':'0,200,255'},0.12)`;
+        ctx.lineWidth   = 2 + i % 3;
+        ctx.beginPath();
+        ctx.moveTo(px, canvas.height - 5);
+        ctx.lineTo(px + 30 + i * 10, canvas.height - 5);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+// ── STARRY NEBULA / DEEP SPACE THEME ──
+function _drawBgSpace() {
+    // Deep black sky
+    ctx.fillStyle = "#000005";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Nebula puffs (drawn first, behind stars)
+    nebulaParticles.forEach(n => {
+        ctx.save();
+        ctx.translate(n.x, n.y);
+        ctx.rotate(n.rot);
+        const ng = ctx.createRadialGradient(0, 0, 0, 0, 0, n.rx);
+        ng.addColorStop(0,   n.color);
+        ng.addColorStop(0.5, n.color.replace('0.0', '0.0').replace(/[\d.]+\)$/, m => String(parseFloat(m)*0.5)+')')); 
+        ng.addColorStop(1,   'rgba(0,0,0,0)');
+        ctx.fillStyle = ng;
+        ctx.scale(1, n.ry / n.rx);
+        ctx.beginPath(); ctx.arc(0, 0, n.rx, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+    });
+
+    // Second nebula pass — bright core wisps
+    ctx.save();
+    ctx.globalAlpha = 0.08 + 0.03 * Math.sin(frame * 0.008);
+    const wispGrad = ctx.createRadialGradient(canvas.width*0.3, canvas.height*0.25, 10, canvas.width*0.3, canvas.height*0.25, 120);
+    wispGrad.addColorStop(0,   "rgba(255,80,200,0.6)");
+    wispGrad.addColorStop(0.5, "rgba(100,0,255,0.3)");
+    wispGrad.addColorStop(1,   "rgba(0,0,30,0)");
+    ctx.fillStyle = wispGrad;
+    ctx.beginPath(); ctx.arc(canvas.width * 0.3, canvas.height * 0.25, 120, 0, Math.PI * 2); ctx.fill();
+
+    const wispGrad2 = ctx.createRadialGradient(canvas.width*0.75, canvas.height*0.45, 5, canvas.width*0.75, canvas.height*0.45, 90);
+    wispGrad2.addColorStop(0,   "rgba(0,200,255,0.5)");
+    wispGrad2.addColorStop(0.5, "rgba(0,80,180,0.25)");
+    wispGrad2.addColorStop(1,   "rgba(0,0,0,0)");
+    ctx.fillStyle = wispGrad2;
+    ctx.beginPath(); ctx.arc(canvas.width * 0.75, canvas.height * 0.45, 90, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // Deep star field
+    deepStars.forEach(s => {
+        const a = s.alpha * (0.5 + 0.5 * Math.sin(s.twinkle * 3));
+        ctx.fillStyle = s.color === 'white'
+            ? `rgba(255,255,255,${a})`
+            : s.color.replace(')', `,${a})`).replace('hsl(', 'hsla(');
+        ctx.shadowBlur  = s.r > 1.2 ? 6 : 0;
+        ctx.shadowColor = s.color;
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.shadowBlur = 0;
+
+    // Shooting meteors
+    meteors.forEach(m => {
+        ctx.save();
+        ctx.globalAlpha = m.alpha;
+        const angle = Math.atan2(m.vy, m.vx);
+        ctx.translate(m.x, m.y);
+        ctx.rotate(angle);
+        const mg = ctx.createLinearGradient(0, 0, -m.len, 0);
+        mg.addColorStop(0,   m.color);
+        mg.addColorStop(0.3, m.color.includes('aaa') ? 'rgba(255,250,180,0.6)' : 'rgba(180,220,255,0.5)');
+        mg.addColorStop(1,   'rgba(0,0,0,0)');
+        ctx.strokeStyle = mg;
+        ctx.lineWidth   = 2.5;
+        ctx.shadowBlur  = 12;
+        ctx.shadowColor = m.color;
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-m.len, 0); ctx.stroke();
+        // Head glow
+        ctx.fillStyle  = m.color;
+        ctx.shadowBlur = 16;
+        ctx.beginPath(); ctx.arc(0, 0, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+    });
+    ctx.shadowBlur = 0;
+
+    // Ground: distant planet surface / horizon glow
+    const groundGrad = ctx.createLinearGradient(0, canvas.height - 60, 0, canvas.height);
+    groundGrad.addColorStop(0, "rgba(0,0,0,0)");
+    groundGrad.addColorStop(0.5, "rgba(20,0,60,0.4)");
+    groundGrad.addColorStop(1,   "rgba(40,0,100,0.6)");
+    ctx.fillStyle = groundGrad;
+    ctx.fillRect(0, canvas.height - 60, canvas.width, 60);
+
+    ctx.save();
+    ctx.shadowBlur  = 18;
+    ctx.shadowColor = "rgba(160,0,255,0.8)";
+    ctx.strokeStyle = "rgba(160,0,255,0.5)";
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath(); ctx.moveTo(0, canvas.height - 1); ctx.lineTo(canvas.width, canvas.height - 1); ctx.stroke();
+    ctx.restore();
+}
+
+// ── Theme-aware pipe colours ──
+function _getPipeColors() {
+    if (bgTheme === 'cyberpunk') {
+        return {
+            grad: ['#1a0035','#8000ff','#b040ff','#8000ff','#1a0035'],
+            glow: 'rgba(180,0,255,0.5)', stroke: 'rgba(200,0,255,0.6)',
+            cap:  ['#0e0025','#9010ff','#9010ff','#0e0025']
+        };
+    }
+    if (bgTheme === 'space') {
+        return {
+            grad: ['#000830','#1040c0','#2060ff','#1040c0','#000830'],
+            glow: 'rgba(0,150,255,0.5)', stroke: 'rgba(0,180,255,0.6)',
+            cap:  ['#000520','#1050d0','#1050d0','#000520']
+        };
+    }
+    // Default green
+    return {
+        grad: ['#0d3320','#27ae60','#2ecc71','#27ae60','#0d3320'],
+        glow: 'rgba(57,255,20,0.4)', stroke: 'rgba(57,255,20,0.5)',
+        cap:  ['#0a2e14','#2ecc71','#2ecc71','#0a2e14']
+    };
+}
+
+// ── Theme transition banner ──
+let _themeBannerTimer = 0;
+let _themeBannerText  = '';
+let _themeBannerColor = '#fff';
+let _themeBannerSub   = '';
+
+function _triggerThemeBanner(title, sub, color) {
+    _themeBannerText  = title;
+    _themeBannerSub   = sub;
+    _themeBannerColor = color;
+    _themeBannerTimer = 220; // ~3.6 s at 60fps
+}
+
+function drawThemeBanner() {
+    if (_themeBannerTimer <= 0) return;
+    _themeBannerTimer -= dt;
+    const t = _themeBannerTimer;
+
+    // Fade in (0-30) and fade out (last 60)
+    const alpha = t > 180 ? Math.min(1, (220 - t) / 40)
+                           : Math.min(1, t / 60);
+    if (alpha <= 0) return;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    // Banner bg
+    const bh = 56, by = canvas.height / 2 - 90;
+    const bg = ctx.createLinearGradient(0, by, canvas.width, by);
+    bg.addColorStop(0,   'rgba(0,0,0,0)');
+    bg.addColorStop(0.2, 'rgba(0,0,0,0.72)');
+    bg.addColorStop(0.8, 'rgba(0,0,0,0.72)');
+    bg.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, by, canvas.width, bh);
+
+    // Neon horizontal lines
+    ctx.strokeStyle = _themeBannerColor;
+    ctx.lineWidth   = 1;
+    ctx.shadowBlur  = 10; ctx.shadowColor = _themeBannerColor;
+    ctx.globalAlpha = alpha * 0.5;
+    ctx.beginPath(); ctx.moveTo(20, by); ctx.lineTo(canvas.width - 20, by); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(20, by + bh); ctx.lineTo(canvas.width - 20, by + bh); ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = alpha;
+
+    // Title
+    ctx.font          = `900 15px 'Orbitron', sans-serif`;
+    ctx.fillStyle     = _themeBannerColor;
+    ctx.shadowBlur    = 20; ctx.shadowColor = _themeBannerColor;
+    ctx.textAlign     = 'center';
+    ctx.textBaseline  = 'middle';
+    ctx.fillText(_themeBannerText, canvas.width / 2, by + bh / 2 - 8);
+
+    // Sub
+    ctx.font       = `600 9px 'Orbitron', sans-serif`;
+    ctx.fillStyle  = 'rgba(255,255,255,0.7)';
+    ctx.shadowBlur = 0;
+    ctx.fillText(_themeBannerSub, canvas.width / 2, by + bh / 2 + 12);
+
+    ctx.restore();
 }
 
 function drawBird() {
@@ -1282,42 +1781,32 @@ function drawBird() {
 }
 
 function drawPipes() {
+    const pc = _getPipeColors();
     pipes.forEach(pipe => {
         const pw = pipe.pw || pipe.width;
 
         let pipeGrad = ctx.createLinearGradient(pipe.x, 0, pipe.x + pw, 0);
-        pipeGrad.addColorStop(0, "#0d3320");
-        pipeGrad.addColorStop(0.2, "#27ae60");
-        pipeGrad.addColorStop(0.5, "#2ecc71");
-        pipeGrad.addColorStop(0.8, "#27ae60");
-        pipeGrad.addColorStop(1, "#0d3320");
+        pc.grad.forEach((c, i) => pipeGrad.addColorStop(i / (pc.grad.length - 1), c));
         ctx.fillStyle = pipeGrad;
         ctx.fillRect(pipe.x, pipe.y, pipe.width, pipe.height);
 
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = "rgba(57,255,20,0.4)";
-        ctx.strokeStyle = "rgba(57,255,20,0.5)";
-        ctx.lineWidth = 1.5;
+        ctx.shadowBlur  = 10;
+        ctx.shadowColor = pc.glow;
+        ctx.strokeStyle = pc.stroke;
+        ctx.lineWidth   = 1.5;
         ctx.strokeRect(pipe.x, pipe.y, pipe.width, pipe.height);
-        ctx.shadowBlur = 0;
+        ctx.shadowBlur  = 0;
 
         const capH = 20, capW = pipe.width + 8, capX = pipe.x - 4;
         let capY = pipe.type === 'top' ? pipe.height - capH : pipe.y;
 
         let capGrad = ctx.createLinearGradient(capX, 0, capX + capW, 0);
-        capGrad.addColorStop(0, "#0a2e14");
-        capGrad.addColorStop(0.3, "#2ecc71");
-        capGrad.addColorStop(0.7, "#2ecc71");
-        capGrad.addColorStop(1, "#0a2e14");
+        pc.cap.forEach((c, i) => capGrad.addColorStop(i / (pc.cap.length - 1), c));
         ctx.fillStyle = capGrad;
-        ctx.beginPath();
-        ctx.roundRect(capX, capY, capW, capH, 4);
-        ctx.fill();
-        ctx.strokeStyle = "rgba(57,255,20,0.6)";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.roundRect(capX, capY, capW, capH, 4);
-        ctx.stroke();
+        ctx.beginPath(); ctx.roundRect(capX, capY, capW, capH, 4); ctx.fill();
+        ctx.strokeStyle = pc.stroke;
+        ctx.lineWidth   = 1;
+        ctx.beginPath(); ctx.roundRect(capX, capY, capW, capH, 4); ctx.stroke();
 
         ctx.fillStyle = "rgba(255,255,255,0.07)";
         ctx.fillRect(pipe.x + 8, pipe.y, 6, pipe.height);
@@ -1410,9 +1899,15 @@ function resetGame() {
     shieldInvincibleTimer = 0;
     multiplierActive      = false;
     multiplierTimer       = 0;
+    // Reset theme
+    bgTheme           = 'default';
+    bgLastTheme       = 'default';
+    bgTransitionAlpha = 1;
+    meteors           = [];
+    meteorTimer       = 0;
     gameRunning = true;
-    lastTime  = 0;   // reset so dt is 0 on first new frame
-    pipeTimer = 90;  // spawn first pipe immediately
+    lastTime  = 0;
+    pipeTimer = 90;
     document.getElementById("gameOverModal").classList.add("hidden");
     updateLiveScore();
     requestAnimationFrame(loop);
