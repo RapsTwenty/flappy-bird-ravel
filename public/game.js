@@ -1,4 +1,4 @@
-const URL_API = "https://flappy-bird-ravel-production.up.railway.app";
+const URL_API = "https://flappy.up.railway.app";
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
