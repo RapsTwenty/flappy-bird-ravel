@@ -1762,3 +1762,63 @@ kbd {
     justify-content: center;
     gap: 4px;
 }
+/* ══════════════════════════════════════════
+   ★ THEME SHOP ITEMS
+══════════════════════════════════════════ */
+
+/* Theme cards are wider (full-width rows of 2) */
+.theme-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 18px 12px 14px;
+    position: relative;
+}
+
+/* Big preview emoji for themes */
+.theme-preview-emoji {
+    font-size: 52px;
+    line-height: 1;
+    filter: drop-shadow(0 0 14px rgba(176,96,255,0.5));
+    animation: themeEmojiFloat 3s ease-in-out infinite;
+}
+
+@keyframes themeEmojiFloat {
+    0%, 100% { transform: translateY(0) scale(1);     }
+    50%       { transform: translateY(-6px) scale(1.05); }
+}
+
+/* Description text under theme name */
+.theme-item-desc {
+    font-family: var(--font-body);
+    font-size: 10px;
+    color: var(--text-dim);
+    text-align: center;
+    letter-spacing: 0.5px;
+    line-height: 1.4;
+    margin-bottom: 2px;
+}
+
+/* Glow tint when equipped */
+.shop-item-equipped.theme-item {
+    background: rgba(176, 96, 255, 0.12);
+    border-color: rgba(176, 96, 255, 0.55);
+    box-shadow:
+        0 0 20px rgba(176, 96, 255, 0.2),
+        inset 0 0 10px rgba(176, 96, 255, 0.06);
+}
+
+/* Cyberpunk tema — cyan accent */
+.theme-item:nth-child(2).shop-item-equipped {
+    background: rgba(0, 180, 255, 0.10);
+    border-color: rgba(0, 200, 255, 0.55);
+    box-shadow: 0 0 20px rgba(0,200,255,0.2), inset 0 0 10px rgba(0,200,255,0.06);
+}
+
+/* Space tema — deeper purple accent */
+.theme-item:nth-child(3).shop-item-equipped {
+    background: rgba(80, 0, 200, 0.12);
+    border-color: rgba(120, 60, 255, 0.55);
+    box-shadow: 0 0 20px rgba(100,0,255,0.2), inset 0 0 10px rgba(100,0,255,0.06);
+}

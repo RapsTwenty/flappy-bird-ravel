@@ -161,7 +161,8 @@ const Inventory = sequelize.define('Inventory', {
     currentSkin:  { type: DataTypes.STRING, defaultValue: 'default'       },
     currentTrail: { type: DataTypes.STRING, defaultValue: 'none'          },
     currentHat:   { type: DataTypes.STRING, defaultValue: 'hat_none'      },
-    currentGlasses:{ type: DataTypes.STRING,defaultValue: 'glasses_none'  }
+    currentGlasses:{ type: DataTypes.STRING,defaultValue: 'glasses_none'  },
+    currentTheme: { type: DataTypes.STRING, defaultValue: 'default'       }  // ← BARU: tema latar belakang
 }, { tableName: 'inventories', timestamps: true });
 
 // GET: Load inventory
@@ -174,7 +175,8 @@ app.get('/api/user/:username/inventory', async (req, res) => {
             currentSkin:   inv.currentSkin   || 'default',
             currentTrail:  inv.currentTrail  || 'none',
             currentHat:    inv.currentHat    || 'hat_none',
-            currentGlasses:inv.currentGlasses|| 'glasses_none'
+            currentGlasses:inv.currentGlasses|| 'glasses_none',
+            currentTheme:  inv.currentTheme  || 'default'
         });
     } catch (error) { res.status(500).json({ message: error.message }); }
 });
@@ -182,13 +184,14 @@ app.get('/api/user/:username/inventory', async (req, res) => {
 // POST: Save inventory
 app.post('/api/user/:username/inventory', async (req, res) => {
     try {
-        const { ownedItems, currentSkin, currentTrail, currentHat, currentGlasses } = req.body;
+        const { ownedItems, currentSkin, currentTrail, currentHat, currentGlasses, currentTheme } = req.body;
         const [inv] = await Inventory.findOrCreate({ where: { username: req.params.username } });
         if (ownedItems)    inv.ownedItems    = JSON.stringify(ownedItems);
         if (currentSkin)   inv.currentSkin   = currentSkin;
         if (currentTrail)  inv.currentTrail  = currentTrail;
         if (currentHat)    inv.currentHat    = currentHat;
         if (currentGlasses)inv.currentGlasses= currentGlasses;
+        if (currentTheme)  inv.currentTheme  = currentTheme;
         await inv.save();
         res.json({ success: true });
     } catch (error) { res.status(500).json({ message: error.message }); }

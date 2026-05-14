@@ -174,11 +174,12 @@ const GLASSES = [
 // ══════════════════════════════════════════
 
 let userCoins    = 0;
-let ownedItems   = ['default', 'none', 'hat_none', 'glasses_none'];  // IDs yang sudah dimiliki
+let ownedItems   = ['default', 'none', 'hat_none', 'glasses_none', 'default'];  // IDs yang sudah dimiliki
 let currentSkin  = 'default';
 let currentTrail = 'none';
 let currentHat     = 'hat_none';
 let currentGlasses = 'glasses_none';
+let currentTheme   = 'default';   // tema latar belakang yang aktif
 let shopCurrentTab = 'skins';
 
 // ══════════════════════════════════════════
@@ -200,9 +201,13 @@ let trailParticles = [];
 // ══════════════════════════════════════════
 // ★ BACKGROUND THEME SYSTEM
 // ══════════════════════════════════════════
-// Thresholds
-const THEME_CYBERPUNK_SCORE = 3000;
-const THEME_SPACE_SCORE     = 10000;
+
+// Tema yang bisa dibeli di shop
+const THEMES = [
+    { id: 'default',   name: 'Default',       price: 0,    emoji: '🌙', description: 'Tema langit malam bawaan' },
+    { id: 'cyberpunk', name: 'Cyberpunk City', price: 500,  emoji: '🏙️', description: 'Kota neon futuristik' },
+    { id: 'space',     name: 'Starry Nebula',  price: 1000, emoji: '🌌', description: 'Nebula bintang yang memukau' },
+];
 
 let bgTheme          = 'default';   // 'default' | 'cyberpunk' | 'space'
 let bgTransitionAlpha = 0;           // 0 → 1 fade-in for current theme
@@ -438,6 +443,8 @@ function _loadInventoryLocal() {
     currentTrail   = localStorage.getItem(`trail_${currentUser}`)   || 'none';
     currentHat     = localStorage.getItem(`hat_${currentUser}`)     || 'hat_none';
     currentGlasses = localStorage.getItem(`glasses_${currentUser}`) || 'glasses_none';
+    currentTheme   = localStorage.getItem(`theme_${currentUser}`)   || 'default';
+    bgTheme        = currentTheme;
 }
 
 // saveInventory: always writes to localStorage, then pushes to server silently
@@ -447,11 +454,12 @@ function saveInventory() {
     localStorage.setItem(`trail_${currentUser}`,   currentTrail);
     localStorage.setItem(`hat_${currentUser}`,     currentHat);
     localStorage.setItem(`glasses_${currentUser}`, currentGlasses);
+    localStorage.setItem(`theme_${currentUser}`,   currentTheme);
     // Fire-and-forget server sync
     fetch(`${URL_API}/api/user/${currentUser}/inventory`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ownedItems, currentSkin, currentTrail, currentHat, currentGlasses })
+        body: JSON.stringify({ ownedItems, currentSkin, currentTrail, currentHat, currentGlasses, currentTheme })
     }).catch(() => {});
 }
 
@@ -466,6 +474,8 @@ function loadInventory() {
             currentTrail  = d.currentTrail  || 'none';
             currentHat    = d.currentHat    || 'hat_none';
             currentGlasses= d.currentGlasses|| 'glasses_none';
+            currentTheme  = d.currentTheme  || 'default';
+            bgTheme       = currentTheme;
             if (!ownedItems.includes('default'))      ownedItems.push('default');
             if (!ownedItems.includes('none'))         ownedItems.push('none');
             if (!ownedItems.includes('hat_none'))     ownedItems.push('hat_none');
@@ -476,6 +486,7 @@ function loadInventory() {
             localStorage.setItem(`trail_${currentUser}`,   currentTrail);
             localStorage.setItem(`hat_${currentUser}`,     currentHat);
             localStorage.setItem(`glasses_${currentUser}`, currentGlasses);
+            localStorage.setItem(`theme_${currentUser}`,   currentTheme);
             if (!gameRunning) drawIdleScreen();
         })
         .catch(() => {}); // already loaded from localStorage above
@@ -1109,30 +1120,6 @@ function update() {
     if (!gameRunning) return;
     bird.velocity += bird.gravity * dt;
     bird.y        += bird.velocity * dt;
-
-    // ── THEME TRANSITION based on score ──
-    const targetTheme = score >= THEME_SPACE_SCORE
-        ? 'space'
-        : score >= THEME_CYBERPUNK_SCORE
-        ? 'cyberpunk'
-        : 'default';
-
-    if (targetTheme !== bgTheme) {
-        bgLastTheme       = bgTheme;
-        bgTheme           = targetTheme;
-        bgTransitionAlpha = 0;
-        // Re-seed space assets when entering space
-        if (bgTheme === 'space') _initSpaceAssets();
-        // Show banner
-        if (bgTheme === 'cyberpunk') {
-            _triggerThemeBanner('⚡ CYBERPUNK CITY', 'SCORE 3000 — WELCOME TO THE NEON DISTRICT', '#b060ff');
-        } else if (bgTheme === 'space') {
-            _triggerThemeBanner('🌌 DEEP SPACE', 'SCORE 10000 — ENTERING THE NEBULA ZONE', '#00f0ff');
-        }
-    }
-    if (bgTransitionAlpha < 1) {
-        bgTransitionAlpha = Math.min(1, bgTransitionAlpha + 0.012 * dt);
-    }
 
     clouds.forEach(c => {
         c.x -= c.speed * dt;
@@ -1899,12 +1886,13 @@ function resetGame() {
     shieldInvincibleTimer = 0;
     multiplierActive      = false;
     multiplierTimer       = 0;
-    // Reset theme
-    bgTheme           = 'default';
-    bgLastTheme       = 'default';
+    // Apply player's chosen theme
+    bgTheme           = currentTheme;
+    bgLastTheme       = currentTheme;
     bgTransitionAlpha = 1;
     meteors           = [];
     meteorTimer       = 0;
+    if (currentTheme === 'space') _initSpaceAssets();
     gameRunning = true;
     lastTime  = 0;
     pipeTimer = 90;
@@ -2070,6 +2058,7 @@ function renderShopItems(tab) {
     if (tab === 'skins') items = SKINS;
     else if (tab === 'trails') items = TRAILS;
     else if (tab === 'accessories') items = null; // handled separately below
+    else if (tab === 'themes') items = null; // handled separately below
     else items = GACHA_ITEMS;
 
     const container = document.getElementById('shopItems');
@@ -2126,7 +2115,51 @@ function renderShopItems(tab) {
         return;
     }
 
-    container.innerHTML = items.map((item, idx) => {
+    // ── THEMES tab: tampilkan tema latar belakang ──
+    if (tab === 'themes') {
+        container.innerHTML = THEMES.map((item, idx) => {
+            const owned    = ownedItems.includes(item.id);
+            const equipped = currentTheme === item.id;
+            const canAfford = userCoins >= item.price;
+
+            let btnClass, btnText;
+            if (equipped) {
+                btnClass = 'shop-btn equipped';
+                btnText  = '✓ AKTIF';
+            } else if (owned) {
+                btnClass = 'shop-btn equip';
+                btnText  = 'AKTIFKAN';
+            } else {
+                btnClass = 'shop-btn buy' + (!canAfford ? ' disabled' : '');
+                btnText  = item.price === 0 ? 'FREE' : `<img src="assets/coin.png" class="icon-coin-sm" alt=""> ${item.price}`;
+            }
+
+            const cardClass = [
+                'shop-item theme-item',
+                equipped ? 'shop-item-equipped' : '',
+                !owned && !canAfford && item.price > 0 ? 'cant-afford' : ''
+            ].join(' ').trim();
+
+            return `
+                <div class="${cardClass}" style="animation-delay:${idx * 0.07}s">
+                    <div class="shop-item-emoji theme-preview-emoji">${item.emoji}</div>
+                    <div class="shop-item-name">${item.name}</div>
+                    <div class="theme-item-desc">${item.description}</div>
+                    <button class="${btnClass}" onclick="handleShopClick('${item.id}','theme')">${btnText}</button>
+                </div>
+            `;
+        }).join('');
+
+        // Tab active state
+        ['tabSkins','tabTrails','tabAcc','tabGacha'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('active');
+        });
+        const tabThemes = document.getElementById('tabThemes');
+        if (tabThemes) tabThemes.classList.add('active');
+        updateCoinDisplay();
+        return;
+    }
         const canAfford = userCoins >= item.price;
 
         // LOGIKA KHUSUS TAB GACHA
@@ -2179,7 +2212,7 @@ function renderShopItems(tab) {
                 </div>
             `;
         }
-    }).join('');
+    }join('');
 
     // Update status tab aktif
     document.getElementById('tabSkins').classList.toggle('active', tab === 'skins');
@@ -2188,12 +2221,14 @@ function renderShopItems(tab) {
     if (tabGacha) tabGacha.classList.toggle('active', tab === 'gacha');
     const tabAcc = document.getElementById('tabAcc');
     if (tabAcc) tabAcc.classList.toggle('active', false);
+    const tabThemes = document.getElementById('tabThemes');
+    if (tabThemes) tabThemes.classList.toggle('active', false);
 
     updateCoinDisplay();
-}
+
 
 async function handleShopClick(itemId, type) {
-    const allItems = [...SKINS, ...TRAILS, ...HATS, ...GLASSES];
+    const allItems = [...SKINS, ...TRAILS, ...HATS, ...GLASSES, ...THEMES];
     const item = allItems.find(i => i.id === itemId);
     if (!item) return;
 
@@ -2410,6 +2445,13 @@ function equipItem(itemId, type) {
         currentHat = itemId;
     } else if (type === 'glasses') {
         currentGlasses = itemId;
+    } else if (type === 'theme') {
+        currentTheme  = itemId;
+        bgTheme       = itemId;
+        bgLastTheme   = itemId;
+        bgTransitionAlpha = 1;
+        // Init space assets jika tema nebula diaktifkan
+        if (itemId === 'space') _initSpaceAssets();
     }
     saveInventory();
     renderShopItems(shopCurrentTab);
