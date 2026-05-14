@@ -92,7 +92,7 @@
                             <button class="mobile-menu-btn" onclick="openMobileMenu()" aria-label="Menu">
                                 <span></span><span></span><span></span>
                             </button>
-                            <span class="player-icon">🎮</span>
+                            <img id="playerAvatarBtn" class="player-avatar-btn" src="" alt="Profile" onclick="openProfileCard(null, true)" title="Lihat Profil">
                             <span id="playerName" class="player-name">PLAYER</span>
                         </div>
 
@@ -273,6 +273,44 @@
                 <button class="btn-logout" onclick="closeMobileMenu(); logout()">
                     <span>⏻</span> KELUAR
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         ★ PROFILE CARD MODAL ★
+    ════════════════════════════════════════ -->
+    <div id="profileCardModal" class="profile-overlay hidden">
+        <div class="profile-backdrop" onclick="closeProfileCard()"></div>
+        <div class="profile-card">
+            <button class="profile-close-btn" onclick="closeProfileCard()">✕</button>
+
+            <div class="profile-avatar-wrap">
+                <img id="profileCardAvatar" class="profile-avatar-lg" src="" alt="Avatar">
+                <div class="profile-avatar-ring"></div>
+            </div>
+
+            <div id="profileCardUsername" class="profile-username">---</div>
+            <div id="profileCardBadge" class="profile-badge hidden">👑 Kamu</div>
+
+            <div class="profile-stats-grid">
+                <div class="profile-stat">
+                    <span id="profileBestScore" class="profile-stat-val">-</span>
+                    <span class="profile-stat-label">Best Score</span>
+                </div>
+                <div class="profile-stat">
+                    <span id="profileGamesPlayed" class="profile-stat-val">-</span>
+                    <span class="profile-stat-label">Games</span>
+                </div>
+                <div class="profile-stat">
+                    <span id="profileTotalScore" class="profile-stat-val">-</span>
+                    <span class="profile-stat-label">Total Score</span>
+                </div>
+            </div>
+
+            <div id="profileLoadingSpinner" class="profile-loading">
+                <div class="profile-spinner"></div>
+                <span>Memuat data...</span>
             </div>
         </div>
     </div>

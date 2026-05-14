@@ -495,6 +495,7 @@ function loadInventory() {
             localStorage.setItem(`glasses_${currentUser}`, currentGlasses);
             localStorage.setItem(`theme_${currentUser}`,   currentTheme);
             if (!gameRunning) drawIdleScreen();
+            updatePlayerAvatar();
         })
         .catch(() => {}); // already loaded from localStorage above
 }
@@ -668,6 +669,7 @@ function initGameSession() {
     loadCoinsFromServer();
     loadLeaderboard();
     drawIdleScreen();
+    updatePlayerAvatar();
 }
 
 function startGame() {
@@ -2139,6 +2141,64 @@ function drawMiniAvatarToDataURL(skinId, hatId, glassesId) {
     return oc.toDataURL();
 }
 
+// ══════════════════════════════════════════
+// ★ PROFILE CARD
+// ══════════════════════════════════════════
+
+function updatePlayerAvatar() {
+    const btn = document.getElementById('playerAvatarBtn');
+    if (!btn) return;
+    btn.src = drawMiniAvatarToDataURL(currentSkin, currentHat, currentGlasses);
+}
+
+async function openProfileCard(username, isOwn = false) {
+    const targetUser = isOwn ? currentUser : username;
+    if (!targetUser) return;
+
+    const modal   = document.getElementById('profileCardModal');
+    const spinner = document.getElementById('profileLoadingSpinner');
+    const badge   = document.getElementById('profileCardBadge');
+
+    // Reset state
+    modal.classList.remove('hidden');
+    spinner.classList.remove('hidden');
+    document.getElementById('profileCardUsername').textContent = targetUser.toUpperCase();
+    document.getElementById('profileBestScore').textContent    = '-';
+    document.getElementById('profileGamesPlayed').textContent  = '-';
+    document.getElementById('profileTotalScore').textContent   = '-';
+    document.getElementById('profileCardAvatar').src           = '';
+    badge.classList.toggle('hidden', !isOwn);
+
+    try {
+        const res  = await fetch(`${URL_API}/api/user/${targetUser}/stats`);
+        const data = await res.json();
+
+        const avatarSrc = drawMiniAvatarToDataURL(
+            data.skin    || 'default',
+            data.hat     || 'hat_none',
+            data.glasses || 'glasses_none'
+        );
+        document.getElementById('profileCardAvatar').src          = avatarSrc;
+        document.getElementById('profileBestScore').textContent   = data.bestScore   ?? 0;
+        document.getElementById('profileGamesPlayed').textContent = data.gamesPlayed ?? 0;
+        document.getElementById('profileTotalScore').textContent  = data.totalScore  ?? 0;
+    } catch {
+        // Fallback: jika fetch gagal, pakai data lokal untuk user sendiri
+        if (isOwn) {
+            document.getElementById('profileCardAvatar').src          = drawMiniAvatarToDataURL(currentSkin, currentHat, currentGlasses);
+            document.getElementById('profileBestScore').textContent   = highScore;
+            document.getElementById('profileGamesPlayed').textContent = '-';
+            document.getElementById('profileTotalScore').textContent  = '-';
+        }
+    } finally {
+        spinner.classList.add('hidden');
+    }
+}
+
+function closeProfileCard() {
+    document.getElementById('profileCardModal').classList.add('hidden');
+}
+
 async function loadLeaderboard() {
     try {
         const res  = await fetch(`${URL_API}/api/leaderboard`);
@@ -2156,7 +2216,7 @@ async function loadLeaderboard() {
             <li style="animation-delay:${i * 0.06}s">
                 <span class="lb-player-info">
                     <span class="lb-rank-badge">${MEDALS[i] || `#${i+1}`}</span>
-                    <img class="lb-avatar" src="${avatarSrc}" alt="${s.username}" title="${s.username}">
+                    <img class="lb-avatar" src="${avatarSrc}" alt="${s.username}" title="${s.username}" onclick="openProfileCard('${s.username}', ${s.username === currentUser})">
                     <span class="lb-player-name">${s.username}</span>
                 </span>
                 <b>${s.score}</b>
@@ -2592,6 +2652,7 @@ function equipItem(itemId, type) {
     renderShopItems(shopCurrentTab);
     // Refresh idle bird preview jika game tidak sedang berjalan
     if (!gameRunning) drawIdleScreen();
+    updatePlayerAvatar();
 }
 
 let shopMsgTimer = null;

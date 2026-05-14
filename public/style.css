@@ -1822,3 +1822,208 @@ kbd {
     border-color: rgba(120, 60, 255, 0.55);
     box-shadow: 0 0 20px rgba(100,0,255,0.2), inset 0 0 10px rgba(100,0,255,0.06);
 }
+/* ════════════════════════════════════════
+   ★ PLAYER AVATAR BUTTON (header)
+════════════════════════════════════════ */
+
+.player-avatar-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid var(--neon-cyan);
+    cursor: pointer;
+    object-fit: contain;
+    background: rgba(0, 240, 255, 0.08);
+    padding: 2px;
+    transition: all 0.25s;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.35);
+    flex-shrink: 0;
+}
+.player-avatar-btn:hover {
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.75);
+    border-color: white;
+    transform: scale(1.12);
+}
+
+/* ════════════════════════════════════════
+   ★ PROFILE CARD MODAL
+════════════════════════════════════════ */
+
+.profile-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.profile-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(8, 12, 26, 0.82);
+    backdrop-filter: blur(10px);
+}
+.profile-card {
+    position: relative;
+    background: linear-gradient(160deg, rgba(10,20,50,0.98) 0%, rgba(5,12,30,0.98) 100%);
+    border: 1px solid rgba(0, 240, 255, 0.28);
+    border-radius: 24px;
+    padding: 36px 28px 28px;
+    min-width: 280px;
+    max-width: 320px;
+    width: 90vw;
+    text-align: center;
+    animation: profileCardPop 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    box-shadow:
+        0 0 0 1px rgba(0,240,255,0.08),
+        0 0 40px rgba(0, 240, 255, 0.12),
+        0 24px 60px rgba(0, 0, 0, 0.6);
+}
+@keyframes profileCardPop {
+    from { opacity: 0; transform: scale(0.65) translateY(40px); }
+    to   { opacity: 1; transform: scale(1)    translateY(0);    }
+}
+.profile-close-btn {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 45, 120, 0.45);
+    background: rgba(255, 45, 120, 0.1);
+    color: var(--neon-pink);
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.profile-close-btn:hover {
+    background: rgba(255, 45, 120, 0.28);
+    box-shadow: 0 0 14px rgba(255, 45, 120, 0.4);
+}
+
+/* ── Avatar circle ── */
+.profile-avatar-wrap {
+    position: relative;
+    width: 90px;
+    height: 90px;
+    margin: 0 auto 16px;
+}
+.profile-avatar-lg {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    border: 3px solid var(--neon-cyan);
+    background: rgba(0, 240, 255, 0.08);
+    object-fit: contain;
+    padding: 4px;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 0 22px rgba(0, 240, 255, 0.5);
+}
+.profile-avatar-ring {
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 240, 255, 0.25);
+    animation: profileRingPulse 2s ease-in-out infinite;
+}
+@keyframes profileRingPulse {
+    0%, 100% { transform: scale(1);    opacity: 0.5; }
+    50%       { transform: scale(1.07); opacity: 1;   }
+}
+
+/* ── Username & badge ── */
+.profile-username {
+    font-family: var(--font-hud);
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 16px rgba(0, 240, 255, 0.6);
+    margin-bottom: 6px;
+}
+.profile-badge {
+    display: inline-block;
+    font-family: var(--font-hud);
+    font-size: 9px;
+    letter-spacing: 1px;
+    background: rgba(245, 208, 0, 0.12);
+    border: 1px solid rgba(245, 208, 0, 0.4);
+    border-radius: 20px;
+    color: var(--neon-yellow);
+    padding: 3px 10px;
+    margin-bottom: 18px;
+}
+
+/* ── Stats grid ── */
+.profile-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 18px;
+}
+.profile-stat {
+    background: rgba(0, 240, 255, 0.05);
+    border: 1px solid rgba(0, 240, 255, 0.12);
+    border-radius: 12px;
+    padding: 12px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s;
+}
+.profile-stat:hover {
+    background: rgba(0, 240, 255, 0.1);
+    border-color: rgba(0, 240, 255, 0.3);
+}
+.profile-stat-val {
+    font-family: var(--font-hud);
+    font-size: 15px;
+    font-weight: 900;
+    color: var(--neon-yellow);
+    text-shadow: 0 0 10px rgba(245, 208, 0, 0.5);
+}
+.profile-stat-label {
+    font-family: var(--font-hud);
+    font-size: 7px;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+}
+
+/* ── Loading spinner ── */
+.profile-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-top: 18px;
+    font-family: var(--font-hud);
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+}
+.profile-spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid rgba(0, 240, 255, 0.15);
+    border-top-color: var(--neon-cyan);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Leaderboard avatar clickable ── */
+.lb-avatar {
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.lb-avatar:hover {
+    transform: scale(1.18);
+    box-shadow: 0 0 14px rgba(0, 240, 255, 0.6);
+}

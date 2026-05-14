@@ -140,6 +140,27 @@ app.get('/api/leaderboard', async (req, res) => {
     }
 });
 
+// GET: Statistik lengkap satu user (untuk profile card)
+app.get('/api/user/:username/stats', async (req, res) => {
+    try {
+        const scores = await Leaderboard.findAll({ where: { username: req.params.username } });
+        const bestScore   = scores.length ? Math.max(...scores.map(s => s.score)) : 0;
+        const gamesPlayed = scores.length;
+        const totalScore  = scores.reduce((sum, s) => sum + s.score, 0);
+
+        const inv = await Inventory.findOne({ where: { username: req.params.username } });
+        res.json({
+            username:    req.params.username,
+            bestScore,
+            gamesPlayed,
+            totalScore,
+            skin:    inv?.currentSkin    || 'default',
+            hat:     inv?.currentHat     || 'hat_none',
+            glasses: inv?.currentGlasses || 'glasses_none'
+        });
+    } catch (error) { res.status(500).json({ message: error.message }); }
+});
+
 // POST: Simpan skor baru
 app.post('/api/score', async (req, res) => {
     try {
