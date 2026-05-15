@@ -195,7 +195,7 @@ function isValidUsername(u) { return typeof u === 'string' && /^[a-zA-Z0-9_]{3,3
 function isValidPassword(p) { return typeof p === 'string' && p.length >= 6 && p.length <= 128; }
 
 // Anti-cheat: batas skor maksimum per sesi (sesuaikan dengan gameplay)
-const MAX_SCORE_PER_GAME = 9999;
+const MAX_SCORE_PER_GAME = 999999;
 
 const DAILY_REWARDS_TABLE = [10, 20, 50, 30, 40, 60, 100];
 
