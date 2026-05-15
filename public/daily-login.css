@@ -142,24 +142,42 @@
 .dl-close-btn {
     position: absolute;
     top: 12px; right: 12px;
+    z-index: 100;
     background: rgba(255, 255, 255, 0.07);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 50%;
-    width: 40px; height: 40px;
+    width: 44px; height: 44px;
     color: var(--text-dim);
     cursor: pointer;
-    font-size: 15px;
+    font-size: 16px;
     display: flex; align-items: center; justify-content: center;
     transition: all 0.2s;
     line-height: 1;
-    /* Extra tap area via padding trick */
     touch-action: manipulation;
+    pointer-events: all;
+    /* Perbesaran area klik tanpa ubah visual, via ::after */
 }
 .dl-close-btn:hover {
     color: #fff;
     border-color: var(--neon-pink);
     box-shadow: 0 0 8px rgba(255, 45, 120, 0.4);
     background: rgba(255, 45, 120, 0.12);
+}
+
+/* Area klik yang jauh lebih besar dari visual tombolnya */
+.dl-close-btn::after {
+    content: '';
+    position: absolute;
+    inset: -14px;
+    border-radius: 50%;
+}
+
+/* Pastikan header tidak menangkap klik di area tombol X */
+.dl-modal-header {
+    pointer-events: none;
+}
+.dl-modal-header * {
+    pointer-events: none;
 }
 
 /* ── Calendar Grid: 4 cols, day-7 spans 2 ── */
