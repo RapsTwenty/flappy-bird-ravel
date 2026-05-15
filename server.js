@@ -306,6 +306,35 @@ app.post('/api/user/coins/add', requireAuth, async (req, res) => {
     }
 });
 
+// POST /api/user/coins/deduct
+app.post('/api/user/coins/deduct', requireAuth, async (req, res) => {
+    try {
+        const { username, amount } = req.body;
+
+        // ✅ Hanya bisa kurangi koin milik sendiri
+        if (req.user.username !== username)
+            return res.status(403).json({ message: 'Tidak boleh mengubah koin user lain.' });
+
+        // ✅ Validasi: amount harus positif & wajar (kita yang negatifkan di server)
+        const parsedAmount = parseInt(amount, 10);
+        if (isNaN(parsedAmount) || parsedAmount <= 0 || parsedAmount > 10000)
+            return res.status(400).json({ message: 'Jumlah koin tidak valid.' });
+
+        const user = await User.findOne({ where: { username } });
+        if (!user) return res.status(404).json({ message: 'User tidak ditemukan.' });
+
+        // ✅ Cegah koin minus
+        if ((user.coins || 0) < parsedAmount)
+            return res.status(400).json({ message: 'Koin tidak cukup.' });
+
+        user.coins = user.coins - parsedAmount;
+        await user.save();
+        res.json({ coins: user.coins });
+    } catch (error) {
+        res.status(500).json({ message: 'Terjadi kesalahan server.' });
+    }
+});
+
 // ─────────────────────────────────────────────────────────
 //  SCORE ENDPOINTS  (✅ wajib token, ✅ anti-cheat)
 // ─────────────────────────────────────────────────────────

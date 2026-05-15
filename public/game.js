@@ -423,10 +423,10 @@ async function addCoinsToServer(amount) {
 
 async function deductCoinsOnServer(amount) {
     try {
-        const res = await fetch(`${URL_API}/api/user/coins/add`, {
+        const res = await fetch(`${URL_API}/api/user/coins/deduct`, {
             method: 'POST',
             headers: _authHeaders(),
-            body: JSON.stringify({ username: currentUser, amount: -amount })
+            body: JSON.stringify({ username: currentUser, amount })
         });
         if (!res.ok) throw new Error('Server error');
         const data = await res.json();
