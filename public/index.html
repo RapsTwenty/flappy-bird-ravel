@@ -101,13 +101,6 @@
                                 <span id="playerName" class="player-name">PLAYER</span>
                             </div>
 
-                            <!-- ★ DAILY LOGIN OPEN BUTTON ★
-                                 Muncul hanya saat tidak main (dikontrol JS) -->
-                            <button id="dailyLoginOpenBtn"
-                                    onclick="openDailyLoginModal()"
-                                    title="Ambil Daily Reward!">
-                                📅 DAILY REWARD
-                            </button>
                         </div>
 
                         <!-- ★ COIN HUD ★ -->
@@ -123,6 +116,13 @@
                     </div>
 
                     <div class="canvas-wrapper">
+                        <!-- ★ DAILY LOGIN OPEN BUTTON ★ pojok kiri atas canvas -->
+                        <button id="dailyLoginOpenBtn"
+                                onclick="openDailyLoginModal()"
+                                title="Ambil Daily Reward!">
+                            📅 DAILY REWARD
+                        </button>
+
                         <canvas id="gameCanvas" width="360" height="540"></canvas>
 
                         <!-- Overlay: Start Screen -->

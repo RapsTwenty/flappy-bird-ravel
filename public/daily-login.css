@@ -11,8 +11,17 @@
     gap: 4px;
 }
 
+/* Ensure canvas-wrapper is position:relative so the btn can be absolute inside it */
+.canvas-wrapper {
+    position: relative;
+}
+
 /* ── Daily Login Open Button ── */
 #dailyLoginOpenBtn {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 10;
     display: flex;
     align-items: center;
     gap: 4px;
@@ -132,22 +141,25 @@
 /* ── Close Button ── */
 .dl-close-btn {
     position: absolute;
-    top: 14px; right: 14px;
-    background: none;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    top: 12px; right: 12px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 50%;
-    width: 26px; height: 26px;
+    width: 40px; height: 40px;
     color: var(--text-dim);
     cursor: pointer;
-    font-size: 11px;
+    font-size: 15px;
     display: flex; align-items: center; justify-content: center;
     transition: all 0.2s;
     line-height: 1;
+    /* Extra tap area via padding trick */
+    touch-action: manipulation;
 }
 .dl-close-btn:hover {
     color: #fff;
     border-color: var(--neon-pink);
     box-shadow: 0 0 8px rgba(255, 45, 120, 0.4);
+    background: rgba(255, 45, 120, 0.12);
 }
 
 /* ── Calendar Grid: 4 cols, day-7 spans 2 ── */
