@@ -1,4 +1,18 @@
 const URL_API = "https://flappy.up.railway.app";
+
+// ══════════════════════════════════════════
+// ★ AUTH HELPER — sertakan JWT di setiap request
+// ══════════════════════════════════════════
+
+// Kembalikan headers dengan Authorization token (jika ada)
+function _authHeaders() {
+    const token = window.authToken || sessionStorage.getItem('authToken');
+    return {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+}
+
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -189,6 +203,8 @@ let shopCurrentTab = 'skins';
 // ══════════════════════════════════════════
 
 let currentUser  = localStorage.getItem("username") || null;
+// ✅ Pulihkan token dari sessionStorage saat halaman di-refresh
+window.authToken = sessionStorage.getItem("authToken") || null;
 let gameRunning  = false;
 let score        = 0;
 let highScore    = parseInt(localStorage.getItem("highScore")) || 0;
@@ -373,7 +389,9 @@ _initSpaceAssets();
 
 async function loadCoinsFromServer() {
     try {
-        const res = await fetch(`${URL_API}/api/user/${currentUser}/coins`);
+        const res = await fetch(`${URL_API}/api/user/${currentUser}/coins`, {
+            headers: _authHeaders()
+        });
         if (!res.ok) throw new Error('Server error');
         const data = await res.json();
         userCoins = data.coins || 0;
@@ -389,7 +407,7 @@ async function addCoinsToServer(amount) {
     try {
         const res = await fetch(`${URL_API}/api/user/coins/add`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: _authHeaders(),
             body: JSON.stringify({ username: currentUser, amount })
         });
         if (!res.ok) throw new Error('Server error');
@@ -407,7 +425,7 @@ async function deductCoinsOnServer(amount) {
     try {
         const res = await fetch(`${URL_API}/api/user/coins/add`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: _authHeaders(),
             body: JSON.stringify({ username: currentUser, amount: -amount })
         });
         if (!res.ok) throw new Error('Server error');
@@ -468,7 +486,7 @@ function saveInventory() {
     // Fire-and-forget server sync
     fetch(`${URL_API}/api/user/${currentUser}/inventory`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: _authHeaders(),
         body: JSON.stringify({ ownedItems, currentSkin, currentTrail, currentHat, currentGlasses, currentTheme })
     }).catch(() => {});
 }
@@ -476,7 +494,7 @@ function saveInventory() {
 // loadInventory: loads localStorage immediately (fast), then syncs from server
 function loadInventory() {
     _loadInventoryLocal(); // immediate display
-    fetch(`${URL_API}/api/user/${currentUser}/inventory`)
+    fetch(`${URL_API}/api/user/${currentUser}/inventory`, { headers: _authHeaders() })
         .then(r => r.ok ? r.json() : Promise.reject())
         .then(d => {
             ownedItems    = d.ownedItems    || ['default','none','hat_none','glasses_none'];
@@ -592,6 +610,9 @@ async function login() {
     if (res.ok) {
         currentUser = data.username;
         localStorage.setItem("username", data.username);
+        // ✅ Simpan token untuk autentikasi request berikutnya
+        window.authToken = data.token;
+        sessionStorage.setItem("authToken", data.token);
         initGameSession();
     } else {
         showAuthToast(data.message, "error");
@@ -602,6 +623,9 @@ function logout() {
     bgm.pause();
     bgm.currentTime = 0;
     localStorage.removeItem("username");
+    // ✅ Hapus token saat logout
+    sessionStorage.removeItem("authToken");
+    window.authToken = null;
     location.reload();
 }
 
@@ -2034,7 +2058,7 @@ async function submitScoreAuto() {
     try {
         await fetch(`${URL_API}/api/score`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: _authHeaders(),
             body: JSON.stringify({ username: currentUser, score: score })
         });
         loadLeaderboard();
@@ -2206,7 +2230,9 @@ async function openProfileCard(username, isOwn = false) {
     badge.classList.toggle('hidden', !isOwn);
 
     try {
-        const res  = await fetch(`${URL_API}/api/user/${targetUser}/stats`);
+        const res  = await fetch(`${URL_API}/api/user/${targetUser}/stats`,
+            isOwn ? { headers: _authHeaders() } : {}
+        );
         const data = await res.json();
 
         const avatarSrc = drawMiniAvatarToDataURL(
