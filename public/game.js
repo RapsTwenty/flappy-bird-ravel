@@ -18,7 +18,8 @@ sfxDeath.volume = 0.8;
 const sfxGacha  = new Audio("assets/gacha.mp3");
 sfxGacha.volume = 0.8;
 
-const sfxFreeze = new Audio("assets/freeze.mp3")
+const sfxKecil = new Audio("assets/kecil.mp3");
+sfxKecil.volume = 0.8;
 // ══════════════════════════════════════════
 // ★ SHOP DATA — Skins & Trails
 // ══════════════════════════════════════════
@@ -331,11 +332,13 @@ let multiplierActive       = false;
 let multiplierTimer        = 0;
 const MULTIPLIER_DURATION  = 600;       // 10 sec @ 60 fps
 
-let freezeActive           = false;
-let freezeTimer            = 0;
-let gameSpeedMult          = 1.0;        // 1.0 = normal, FREEZE_SLOW during freeze
-const FREEZE_DURATION      = 300;        // 5 sec @ 60 fps
-const FREEZE_SLOW          = 0.35;       // pipes/spawning at 35% speed during freeze
+let shrinkActive           = false;
+let shrinkTimer            = 0;
+let gameSpeedMult          = 1.0;        // kept for any future use, always 1.0 now
+const SHRINK_DURATION      = 600;        // 10 sec @ 60 fps
+const BIRD_NORMAL_W        = 28;
+const BIRD_NORMAL_H        = 24;
+const BIRD_SHRINK_SCALE    = 0.50;       // 50% size when shrunk
 
 // Generate background stars
 for (let i = 0; i < 40; i++) {
@@ -936,13 +939,13 @@ const POWERUP_CONFIG = {
         labelText: '×2 SCORE!',
         labelColor:'#f5d000'
     },
-    freeze: {
-        symbol:    '❄️',
-        color:     '#80e8ff',
-        glowColor: 'rgba(128,232,255,0.9)',
-        bgColor:   'rgba(0,200,255,0.18)',
-        labelText: '❄️ FREEZE!',
-        labelColor:'#80e8ff'
+    shrink: {
+        symbol:    '🔻',
+        color:     '#ff80ff',
+        glowColor: 'rgba(255,128,255,0.9)',
+        bgColor:   'rgba(220,80,255,0.18)',
+        labelText: '🔻 MINI BIRD!',
+        labelColor:'#ff80ff'
     }
 };
 
@@ -958,13 +961,14 @@ function applyPowerup(type) {
         multiplierTimer  = MULTIPLIER_DURATION;
         sfxX2.currentTime = 0;
         sfxX2.play();
-    } else if (type === 'freeze') {
-        freezeActive  = true;
-        freezeTimer   = FREEZE_DURATION;
-        gameSpeedMult = FREEZE_SLOW;
-        // Reuse shield SFX; swap for assets/freeze.mp3 if you have one
-        sfxFreeze.currentTime = 0;
-        sfxFreeze.play();
+    } else if (type === 'shrink') {
+        shrinkActive  = true;
+        shrinkTimer   = SHRINK_DURATION;
+        // Scale bird down immediately
+        bird.width  = BIRD_NORMAL_W * BIRD_SHRINK_SCALE;
+        bird.height = BIRD_NORMAL_H * BIRD_SHRINK_SCALE;
+        sfxKecil.currentTime = 0;
+        sfxKecil.play();
     }
     // Push floating pickup text (reuses comboTexts system)
     comboTexts.push({
@@ -1071,7 +1075,7 @@ function drawShieldEffect() {
 }
 
 function drawPowerupHUD() {
-    if (!shieldActive && !shieldInvincible && !multiplierActive && !freezeActive) return;
+    if (!shieldActive && !shieldInvincible && !multiplierActive && !shrinkActive) return;
 
     let hx = 8, hy = 8;
 
@@ -1128,30 +1132,30 @@ function drawPowerupHUD() {
         hx += 66;
     }
 
-    // ── Freeze indicator ──
-    if (freezeActive) {
-        const secsLeft = Math.ceil(freezeTimer / 60);
-        const icePulse = 0.6 + 0.4 * Math.sin(Date.now() / 200);
+    // ── Shrink indicator ──
+    if (shrinkActive) {
+        const secsLeft  = Math.ceil(shrinkTimer / 60);
+        const pinkPulse = 0.6 + 0.4 * Math.sin(Date.now() / 200);
         ctx.save();
         ctx.shadowBlur  = 10;
-        ctx.shadowColor = 'rgba(0,230,255,0.8)';
+        ctx.shadowColor = 'rgba(255,128,255,0.8)';
 
-        ctx.fillStyle   = 'rgba(0,200,255,0.15)';
-        ctx.strokeStyle = `rgba(0,230,255,${icePulse})`;
+        ctx.fillStyle   = 'rgba(220,80,255,0.15)';
+        ctx.strokeStyle = `rgba(255,128,255,${pinkPulse})`;
         ctx.lineWidth   = 1.5;
         ctx.beginPath();
-        ctx.roundRect(hx, hy, 62, 22, 11);
+        ctx.roundRect(hx, hy, 68, 22, 11);
         ctx.fill();
         ctx.stroke();
 
         ctx.font         = '13px sans-serif';
         ctx.textBaseline = 'middle';
         ctx.textAlign    = 'left';
-        ctx.fillText('❄️', hx + 4, hy + 11);
+        ctx.fillText('🔻', hx + 4, hy + 11);
 
-        ctx.fillStyle    = '#80e8ff';
+        ctx.fillStyle    = '#ff80ff';
         ctx.font         = `bold 8px 'Orbitron', sans-serif`;
-        ctx.fillText(`${secsLeft}s`, hx + 26, hy + 11);
+        ctx.fillText(`MINI ${secsLeft}s`, hx + 26, hy + 11);
 
         ctx.restore();
     }
@@ -1175,7 +1179,7 @@ function createPipe() {
         const available = [];
         if (!shieldActive && !shieldInvincible) available.push('shield');
         if (!multiplierActive)                  available.push('multiplier');
-        if (!freezeActive)                      available.push('freeze');
+        if (!shrinkActive)                      available.push('shrink');
         if (available.length === 0) return;
 
         const type = available[Math.floor(Math.random() * available.length)];
@@ -1268,11 +1272,11 @@ function update() {
     }
 
     // Pipe spawning: time-based so speed is identical at any refresh rate
-    pipeTimer -= dt * gameSpeedMult;
+    pipeTimer -= dt;
     if (pipeTimer <= 0) { createPipe(); pipeTimer = 90; }
 
     pipes.forEach((pipe, index) => {
-        pipe.x -= 2.5 * dt * gameSpeedMult;
+        pipe.x -= 2.5 * dt;
 
         const margin = 3;
         if (bird.x + bird.width - margin > pipe.x &&
@@ -1328,7 +1332,7 @@ function update() {
     }
 
     // ── Move powerups & collect ──
-    powerups.forEach(p => { p.x -= 2.5 * dt * gameSpeedMult; });
+    powerups.forEach(p => { p.x -= 2.5 * dt; });
     powerups = powerups.filter(p => p.x + p.size > -10 && !p.collected);
 
     powerups.forEach(p => {
@@ -1341,13 +1345,14 @@ function update() {
         }
     });
 
-    // ── Freeze countdown ──
-    if (freezeActive) {
-        freezeTimer -= dt;
-        if (freezeTimer <= 0) {
-            freezeActive  = false;
-            freezeTimer   = 0;
-            gameSpeedMult = 1.0;
+    // ── Shrink countdown ──
+    if (shrinkActive) {
+        shrinkTimer -= dt;
+        if (shrinkTimer <= 0) {
+            shrinkActive  = false;
+            shrinkTimer   = 0;
+            bird.width  = BIRD_NORMAL_W;
+            bird.height = BIRD_NORMAL_H;
         }
     }
 
@@ -1399,7 +1404,7 @@ function draw() {
     drawShieldEffect();
     drawParticles();
     drawFeverEffect();
-    drawFreezeEffect();
+    drawShrinkEffect();
     drawComboTexts();
     drawPowerupHUD();
     drawThemeBanner();
@@ -1780,8 +1785,11 @@ function drawBird() {
     ctx.translate(bx + bw / 2, by + bh / 2);
     ctx.rotate(angle);
 
-    ctx.shadowBlur = 18;
-    ctx.shadowColor = skin.glow;
+    // Shrink: extra pink glow overrides normal skin glow
+    ctx.shadowBlur  = shrinkActive ? 22 : 18;
+    ctx.shadowColor = shrinkActive
+        ? `rgba(255,80,255,${0.7 + 0.3 * Math.sin(Date.now() / 120)})`
+        : skin.glow;
 
     // Body
     let bodyGrad = ctx.createRadialGradient(-3, -3, 2, 0, 0, bw);
@@ -1860,42 +1868,63 @@ function drawBird() {
 // ★ ICE / FREEZE VISUAL EFFECT
 // ══════════════════════════════════════════
 
-function drawFreezeEffect() {
-    if (!freezeActive) return;
-    const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 280);
+// ══════════════════════════════════════════
+// ★ SHRINK VISUAL EFFECT
+// ══════════════════════════════════════════
+function drawShrinkEffect() {
+    if (!shrinkActive) return;
+    const t     = shrinkTimer / SHRINK_DURATION; // 1.0→0.0 as it runs out
+    const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 180);
 
     ctx.save();
 
-    // Radial vignette — cool blue tint bleeding in from edges only
-    const vg = ctx.createRadialGradient(
-        canvas.width / 2, canvas.height / 2, canvas.height * 0.22,
-        canvas.width / 2, canvas.height / 2, canvas.height * 0.82
-    );
-    vg.addColorStop(0, 'rgba(0,170,255,0)');
-    vg.addColorStop(1, `rgba(0,170,255,${0.09 + 0.04 * pulse})`);
-    ctx.fillStyle = vg;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Pulsing pink/magenta aura around the bird
+    const bx = bird.x + bird.width / 2;
+    const by = bird.y + bird.height / 2;
+    const auraR = (bird.width + bird.height) * 0.9 + 6 * pulse;
 
-    // Glowing border — pulsing cyan
-    ctx.strokeStyle = `rgba(0,220,255,${0.28 + 0.18 * pulse})`;
-    ctx.lineWidth   = 2.5;
-    ctx.shadowBlur  = 14;
-    ctx.shadowColor = 'rgba(0,220,255,0.6)';
-    ctx.strokeRect(1.5, 1.5, canvas.width - 3, canvas.height - 3);
+    const auraGrad = ctx.createRadialGradient(bx, by, 0, bx, by, auraR * 2);
+    auraGrad.addColorStop(0,   `rgba(255,80,255,${0.22 * pulse})`);
+    auraGrad.addColorStop(0.5, `rgba(255,80,255,${0.12 * pulse})`);
+    auraGrad.addColorStop(1,   'rgba(255,80,255,0)');
+    ctx.fillStyle = auraGrad;
+    ctx.beginPath();
+    ctx.arc(bx, by, auraR * 2, 0, Math.PI * 2);
+    ctx.fill();
 
-    // Small drifting ice specks
-    const t = Date.now() / 1000;
-    for (let i = 0; i < 8; i++) {
-        const sx = ((Math.sin(i * 2.4 + t * 0.4) * 0.5 + 0.5) * canvas.width);
-        const sy = ((i / 8 + t * 0.05) % 1) * canvas.height;
-        const sr = 1.5 + Math.sin(i + t) * 0.8;
+    // Thin pulsing ring around bird
+    ctx.strokeStyle = `rgba(255,128,255,${0.5 + 0.4 * pulse})`;
+    ctx.lineWidth   = 1.5;
+    ctx.shadowBlur  = 12;
+    ctx.shadowColor = 'rgba(255,80,255,0.9)';
+    ctx.beginPath();
+    ctx.arc(bx, by, auraR + 4, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Drifting mini stars around bird
+    const now = Date.now() / 1000;
+    for (let i = 0; i < 5; i++) {
+        const ang  = (i / 5) * Math.PI * 2 + now * 1.8;
+        const dist = 18 + 6 * Math.sin(now * 3 + i);
+        const sx   = bx + Math.cos(ang) * dist;
+        const sy   = by + Math.sin(ang) * dist;
+        ctx.fillStyle  = `rgba(255,180,255,${0.6 + 0.4 * Math.sin(now * 4 + i)})`;
+        ctx.shadowBlur = 6;
+        ctx.shadowColor= 'rgba(255,80,255,0.8)';
         ctx.beginPath();
-        ctx.arc(sx, sy, sr, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(160,240,255,${0.3 + 0.25 * Math.sin(i + t * 2)})`;
-        ctx.shadowBlur  = 6;
-        ctx.shadowColor = 'rgba(0,220,255,0.8)';
+        ctx.arc(sx, sy, 2 + Math.sin(now * 2 + i), 0, Math.PI * 2);
         ctx.fill();
     }
+
+    // Subtle full-canvas tint (fades out as timer runs low)
+    const vignette = ctx.createRadialGradient(
+        canvas.width / 2, canvas.height / 2, canvas.height * 0.25,
+        canvas.width / 2, canvas.height / 2, canvas.height * 0.85
+    );
+    vignette.addColorStop(0, 'rgba(200,0,255,0)');
+    vignette.addColorStop(1, `rgba(200,0,255,${0.06 * t})`);
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.restore();
 }
@@ -1966,9 +1995,10 @@ function gameOver() {
     shieldInvincibleTimer = 0;
     multiplierActive      = false;
     multiplierTimer       = 0;
-    freezeActive          = false;
-    freezeTimer           = 0;
-    gameSpeedMult         = 1.0;
+    shrinkActive          = false;
+    shrinkTimer           = 0;
+    bird.width            = BIRD_NORMAL_W;
+    bird.height           = BIRD_NORMAL_H;
     document.getElementById("gameOverModal").classList.remove("hidden");
     document.getElementById("finalScore").innerText = score;
 
@@ -2023,9 +2053,10 @@ function resetGame() {
     shieldInvincibleTimer = 0;
     multiplierActive      = false;
     multiplierTimer       = 0;
-    freezeActive          = false;
-    freezeTimer           = 0;
-    gameSpeedMult         = 1.0;
+    shrinkActive          = false;
+    shrinkTimer           = 0;
+    bird.width            = BIRD_NORMAL_W;
+    bird.height           = BIRD_NORMAL_H;
     // Apply player's chosen theme
     bgTheme           = currentTheme;
     bgLastTheme       = currentTheme;
@@ -2215,7 +2246,7 @@ function renderProfileCollection(owned, stats) {
     const mySkins = SKINS.filter(s => s.id !== 'default' && owned.includes(s.id));
     if (mySkins.length) {
         sections.push({
-            icon: '\xf0\x9f\x90\xa6', label: 'Skins',
+            icon: '🐦', label: 'Skins',
             items: mySkins.map(s => ({
                 emoji: `<span class="pcoll-dot" style="background:${s.body ? s.body[0] : '#fff'}"></span>`,
                 name:  s.name, active: stats.skin === s.id
@@ -2227,7 +2258,7 @@ function renderProfileCollection(owned, stats) {
     const myTrails = TRAILS.filter(t => t.id !== 'none' && owned.includes(t.id));
     if (myTrails.length) {
         sections.push({
-            icon: '\xe2\x9c\xa8', label: 'Trails',
+            icon: '✨', label: 'Trails',
             items: myTrails.map(t => ({ emoji: t.emoji, name: t.name, active: stats.trail === t.id }))
         });
     }
@@ -2236,7 +2267,7 @@ function renderProfileCollection(owned, stats) {
     const myHats = HATS.filter(h => h.id !== 'hat_none' && owned.includes(h.id));
     if (myHats.length) {
         sections.push({
-            icon: '\xf0\x9f\x8e\xa9', label: 'Topi',
+            icon: '🎩', label: 'Topi',
             items: myHats.map(h => ({ emoji: h.emoji, name: h.name, active: stats.hat === h.id }))
         });
     }
@@ -2245,19 +2276,19 @@ function renderProfileCollection(owned, stats) {
     const myGlasses = GLASSES.filter(g => g.id !== 'glasses_none' && owned.includes(g.id));
     if (myGlasses.length) {
         sections.push({
-            icon: '\xf0\x9f\x95\xb6\xef\xb8\x8f', label: 'Kacamata',
+            icon: '🕶️', label: 'Kacamata',
             items: myGlasses.map(g => ({ emoji: g.emoji, name: g.name, active: stats.glasses === g.id }))
         });
     }
 
     if (!sections.length) {
-        container.innerHTML = `<p class="pcoll-empty">\xf0\x9f\x8e\x92 Belum ada koleksi eksklusif</p>`;
+        container.innerHTML = `<p class="pcoll-empty">🎒 Belum ada koleksi eksklusif</p>`;
         return;
     }
 
     const totalItems = sections.reduce((s, sec) => s + sec.items.length, 0);
     container.innerHTML = `
-        <div class="pcoll-header">\xf0\x9f\x8e\x92 KOLEKSI <span class="pcoll-count">${totalItems} item</span></div>
+        <div class="pcoll-header">🎒 KOLEKSI <span class="pcoll-count">${totalItems} item</span></div>
         ${sections.map(sec => `
             <div class="pcoll-section">
                 <span class="pcoll-label">${sec.icon} ${sec.label}</span>
@@ -2299,7 +2330,7 @@ async function loadLeaderboard() {
                 <span class="lb-player-info">
                     <span class="lb-rank-badge">${MEDALS[i] || `#${i+1}`}</span>
                     <img class="lb-avatar" src="${avatarSrc}" alt="${s.username}">
-                    <span class="lb-player-name">${s.username}${isSelf ? ' \xf0\x9f\x91\x91' : ''}</span>
+                    <span class="lb-player-name">${s.username}${isSelf ? ' 👑' : ''}</span>
                 </span>
                 <b>${s.score}</b>
             </li>`;
