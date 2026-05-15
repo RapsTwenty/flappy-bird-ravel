@@ -375,7 +375,8 @@ app.get('/api/leaderboard', async (req, res) => {
 //  USER STATS  (✅ wajib token, ✅ hanya milik sendiri)
 // ─────────────────────────────────────────────────────────
 
-app.get('/api/user/:username/stats', requireAuth, requireSelf, async (req, res) => {
+// Stats publik — siapapun bisa lihat tanpa token
+app.get('/api/user/:username/stats', async (req, res) => {
     try {
         const scores = await Leaderboard.findAll({ where: { username: req.params.username } });
         const bestScore   = scores.length ? Math.max(...scores.map(s => s.score)) : 0;
@@ -388,7 +389,7 @@ app.get('/api/user/:username/stats', requireAuth, requireSelf, async (req, res) 
         res.json({
             username:    req.params.username,
             bestScore, gamesPlayed, totalScore,
-            coins:       user?.coins        ?? 0,
+            coins:       user?.coins ?? 0,
             skin:        inv?.currentSkin    || 'default',
             trail:       inv?.currentTrail   || 'none',
             hat:         inv?.currentHat     || 'hat_none',
