@@ -23,8 +23,9 @@ const sequelize = new Sequelize(
 const User = sequelize.define('User', {
     username: { type: DataTypes.STRING, unique: true, allowNull: false },
     password: { type: DataTypes.STRING, allowNull: false },
-    coins:    { type: DataTypes.INTEGER, defaultValue: 0 }  // ← BARU: sistem koin
+    coins:    { type: DataTypes.INTEGER, defaultValue: 0 }
 });
+
 // Tambahkan ini agar folder 'public' bisa diakses browser
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -32,6 +33,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+
 // Endpoint Register
 app.post('/api/register', async (req, res) => {
     try {
@@ -96,7 +98,6 @@ const Leaderboard = sequelize.define('Leaderboard', {
 // GET: 10 skor tertinggi — dengan data inventory (skin, hat, glasses)
 app.get('/api/leaderboard', async (req, res) => {
     try {
-        // Ambil semua skor lalu agregasi best-per-user di server
         const allScores = await Leaderboard.findAll({ order: [['score', 'DESC']] });
 
         const best = {};
@@ -111,7 +112,6 @@ app.get('/api/leaderboard', async (req, res) => {
             .sort((a, b) => b.score - a.score)
             .slice(0, 10);
 
-        // Fetch inventory untuk semua user dalam top 10 sekaligus
         const usernames = top10.map(u => u.username);
         const inventories = await Inventory.findAll({
             where: { username: { [Op.in]: usernames } }
@@ -176,8 +176,6 @@ app.post('/api/score', async (req, res) => {
     }
 });
 
-// Sinkronisasi DB — alter:true agar kolom 'coins' ditambahkan ke tabel User yang sudah ada
-
 // ── INVENTORY ───────────────────────────────────────
 
 const Inventory = sequelize.define('Inventory', {
@@ -187,7 +185,7 @@ const Inventory = sequelize.define('Inventory', {
     currentTrail: { type: DataTypes.STRING, defaultValue: 'none'          },
     currentHat:   { type: DataTypes.STRING, defaultValue: 'hat_none'      },
     currentGlasses:{ type: DataTypes.STRING,defaultValue: 'glasses_none'  },
-    currentTheme: { type: DataTypes.STRING, defaultValue: 'default'       }  // ← BARU: tema latar belakang
+    currentTheme: { type: DataTypes.STRING, defaultValue: 'default'       }
 }, { tableName: 'inventories', timestamps: true });
 
 // GET: Load inventory
@@ -222,6 +220,116 @@ app.post('/api/user/:username/inventory', async (req, res) => {
     } catch (error) { res.status(500).json({ message: error.message }); }
 });
 
+// ── DAILY LOGIN ──────────────────────────────────────────────
+//
+// Model menyimpan: streak (jumlah hari berturut-turut) & lastClaim (YYYY-MM-DD)
+
+const DailyLogin = sequelize.define('DailyLogin', {
+    username:  { type: DataTypes.STRING, allowNull: false, unique: true },
+    streak:    { type: DataTypes.INTEGER, defaultValue: 0 },
+    lastClaim: { type: DataTypes.DATEONLY, allowNull: true }  // YYYY-MM-DD
+}, { tableName: 'daily_logins', timestamps: true });
+
+// Helper: string tanggal hari ini (server-side, format YYYY-MM-DD)
+function todayStr() {
+    return new Date().toISOString().slice(0, 10);
+}
+function yesterdayStr() {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().slice(0, 10);
+}
+
+// Reward table (sama dengan client)
+const DAILY_REWARDS_TABLE = [10, 20, 50, 30, 40, 60, 100];
+
+// GET: Cek status daily login user
+// Response: { streak, lastClaim, claimedToday, nextRewardCoins, nextDayIndex }
+app.get('/api/user/:username/daily', async (req, res) => {
+    try {
+        const { username } = req.params;
+        let dl = await DailyLogin.findOne({ where: { username } });
+        if (!dl) dl = await DailyLogin.create({ username, streak: 0, lastClaim: null });
+
+        const today         = todayStr();
+        const claimedToday  = dl.lastClaim
+            ? dl.lastClaim.toISOString?.().slice(0, 10) === today || dl.lastClaim === today
+            : false;
+        const streak        = dl.streak || 0;
+        const nextDayIndex  = streak % 7;                        // 0-6
+        const nextReward    = DAILY_REWARDS_TABLE[nextDayIndex];
+
+        res.json({ streak, lastClaim: dl.lastClaim, claimedToday, nextRewardCoins: nextReward, nextDayIndex });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// POST: Klaim daily reward
+// Body: { username }
+// Response: { success, coins, streak, rewardCoins, message }
+app.post('/api/user/:username/daily/claim', async (req, res) => {
+    try {
+        const { username } = req.params;
+
+        // Cari / buat record daily login
+        let [dl] = await DailyLogin.findOrCreate({
+            where: { username },
+            defaults: { streak: 0, lastClaim: null }
+        });
+
+        const today     = todayStr();
+        const yesterday = yesterdayStr();
+
+        // Normalize lastClaim ke string
+        const lastClaimStr = dl.lastClaim
+            ? (typeof dl.lastClaim === 'string' ? dl.lastClaim : dl.lastClaim.toISOString().slice(0, 10))
+            : null;
+
+        // Sudah klaim hari ini?
+        if (lastClaimStr === today) {
+            return res.status(400).json({ message: 'Sudah klaim hari ini', claimedToday: true });
+        }
+
+        // Hitung streak baru
+        let newStreak;
+        if (!lastClaimStr) {
+            newStreak = 1;                          // pertama kali
+        } else if (lastClaimStr === yesterday) {
+            newStreak = (dl.streak || 0) + 1;      // berturut-turut
+        } else {
+            newStreak = 1;                          // streak terputus
+        }
+
+        const dayIndex   = (newStreak - 1) % 7;   // indeks hari yang diklaim (0-6)
+        const rewardCoins = DAILY_REWARDS_TABLE[dayIndex];
+
+        // Update DailyLogin
+        dl.streak    = newStreak;
+        dl.lastClaim = today;
+        await dl.save();
+
+        // Tambah koin ke User
+        const user = await User.findOne({ where: { username } });
+        if (user) {
+            user.coins = (user.coins || 0) + rewardCoins;
+            await user.save();
+        }
+
+        res.json({
+            success:      true,
+            coins:        user ? user.coins : rewardCoins,
+            streak:       newStreak,
+            rewardCoins,
+            dayIndex,
+            message:      `Berhasil klaim ${rewardCoins} koin! (Hari ${dayIndex + 1}, Streak ${newStreak})`
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Sinkronisasi DB — alter:true agar tabel baru (daily_logins) ditambahkan otomatis
 sequelize.sync({ alter: true })
     .then(() => console.log('Database & Table Berhasil Sinkron!'))
     .catch(err => console.log('Error Sinkronisasi: ' + err));

@@ -1,0 +1,350 @@
+/* ══════════════════════════════════════════════════════
+   DAILY LOGIN REWARD SYSTEM — Neon Arcade Theme
+   Letakkan file ini di folder public/ (sama dengan style.css)
+══════════════════════════════════════════════════════ */
+
+/* ── Player area wrapper (column: badge + daily btn) ── */
+.player-area {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+/* ── Daily Login Open Button ── */
+#dailyLoginOpenBtn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(0, 240, 255, 0.07);
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    border-radius: 20px;
+    padding: 3px 9px;
+    font-family: var(--font-hud);
+    font-size: 8px;
+    color: var(--neon-cyan);
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+    white-space: nowrap;
+}
+
+#dailyLoginOpenBtn:hover {
+    background: rgba(0, 240, 255, 0.15);
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+}
+
+/* State: reward not yet claimed today → pulse yellow */
+#dailyLoginOpenBtn.dl-unclaimed {
+    border-color: rgba(245, 208, 0, 0.7);
+    color: var(--neon-yellow);
+    background: rgba(245, 208, 0, 0.07);
+    animation: dlBtnPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes dlBtnPulse {
+    0%, 100% { box-shadow: 0 0 6px rgba(245, 208, 0, 0.25); }
+    50%       { box-shadow: 0 0 18px rgba(245, 208, 0, 0.65), 0 0 30px rgba(245, 208, 0, 0.25); }
+}
+
+/* ── Modal Overlay ── */
+.dl-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(8, 12, 26, 0.88);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1500;
+}
+
+/* ── Modal Card ── */
+.dl-modal {
+    background: var(--dark-card);
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    border-radius: 24px;
+    padding: 26px 22px 22px;
+    max-width: 390px;
+    width: 93vw;
+    box-shadow:
+        0 0 50px rgba(0, 240, 255, 0.12),
+        0 0 100px rgba(176, 96, 255, 0.08),
+        0 30px 70px rgba(0, 0, 0, 0.6);
+    animation: dlModalIn 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    position: relative;
+    overflow: hidden;
+}
+
+@keyframes dlModalIn {
+    from { opacity: 0; transform: scale(0.82) translateY(24px); }
+    to   { opacity: 1; transform: scale(1)    translateY(0);    }
+}
+
+/* Ambient glow stripe behind the modal */
+.dl-modal::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: 10%; right: 10%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+    border-radius: 2px;
+    opacity: 0.6;
+}
+
+/* ── Modal Header ── */
+.dl-modal-header {
+    text-align: center;
+    margin-bottom: 18px;
+}
+
+.dl-modal-icon {
+    font-size: 38px;
+    display: block;
+    margin-bottom: 8px;
+    filter: drop-shadow(0 0 12px rgba(245, 208, 0, 0.6));
+    animation: dlIconBounce 1.2s ease-in-out infinite;
+}
+
+@keyframes dlIconBounce {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(-5px); }
+}
+
+.dl-modal-title {
+    font-family: var(--font-pixel);
+    font-size: 11px;
+    color: var(--neon-yellow);
+    text-shadow: 0 0 14px rgba(245, 208, 0, 0.6);
+    letter-spacing: 2px;
+    margin-bottom: 5px;
+}
+
+.dl-modal-sub {
+    font-family: var(--font-hud);
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 0.8px;
+}
+
+/* ── Close Button ── */
+.dl-close-btn {
+    position: absolute;
+    top: 14px; right: 14px;
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    width: 26px; height: 26px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    line-height: 1;
+}
+.dl-close-btn:hover {
+    color: #fff;
+    border-color: var(--neon-pink);
+    box-shadow: 0 0 8px rgba(255, 45, 120, 0.4);
+}
+
+/* ── Calendar Grid: 4 cols, day-7 spans 2 ── */
+.dl-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 7px;
+    margin-bottom: 14px;
+}
+
+/* Day 7 is the 7th child → spans 2 cols on second row */
+.dl-day:nth-child(7) {
+    grid-column: span 2;
+}
+
+/* ── Day Card ── */
+.dl-day {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 11px;
+    padding: 9px 5px 8px;
+    text-align: center;
+    position: relative;
+    transition: transform 0.2s, box-shadow 0.2s;
+    user-select: none;
+}
+
+.dl-day-num {
+    font-family: var(--font-hud);
+    font-size: 6.5px;
+    color: var(--text-dim);
+    letter-spacing: 0.8px;
+    margin-bottom: 5px;
+}
+
+.dl-day-emoji {
+    font-size: 21px;
+    display: block;
+    margin-bottom: 4px;
+    line-height: 1;
+}
+
+.dl-day-coins {
+    font-family: var(--font-pixel);
+    font-size: 6.5px;
+    color: var(--neon-yellow);
+    line-height: 1;
+}
+
+/* ── Day states ── */
+
+/* Past days (already claimed on previous sessions) */
+.dl-day--past {
+    background: rgba(57, 255, 20, 0.05);
+    border-color: rgba(57, 255, 20, 0.2);
+    opacity: 0.65;
+}
+
+/* The day claimed today */
+.dl-day--claimed {
+    background: rgba(57, 255, 20, 0.09);
+    border-color: rgba(57, 255, 20, 0.45);
+    box-shadow: 0 0 10px rgba(57, 255, 20, 0.18);
+}
+.dl-day--claimed .dl-day-coins { color: var(--neon-green); }
+
+/* Current day (to be claimed) */
+.dl-day--current {
+    border-color: var(--neon-yellow);
+    background: rgba(245, 208, 0, 0.07);
+    box-shadow: 0 0 14px rgba(245, 208, 0, 0.28);
+    transform: scale(1.06);
+}
+
+/* Future days */
+.dl-day--future {
+    opacity: 0.35;
+    filter: grayscale(0.6);
+}
+
+/* ── Special days (3 & 7): Neon Pink Pulse ── */
+.dl-day--special {
+    border-color: rgba(255, 45, 120, 0.6) !important;
+    background: rgba(255, 45, 120, 0.06) !important;
+    animation: dlSpecialPulse 1.8s ease-in-out infinite;
+}
+
+/* Override: if special day is already past/claimed, stop pulse & go green */
+.dl-day--special.dl-day--past,
+.dl-day--special.dl-day--claimed {
+    animation: none !important;
+    border-color: rgba(57, 255, 20, 0.45) !important;
+    background: rgba(57, 255, 20, 0.09) !important;
+    box-shadow: 0 0 10px rgba(57, 255, 20, 0.18) !important;
+}
+
+/* If special day is the current unclaimed day: yellow + pink combo pulse */
+.dl-day--special.dl-day--current {
+    animation: dlSpecialCurrentPulse 1.2s ease-in-out infinite !important;
+    border-color: var(--neon-yellow) !important;
+}
+
+@keyframes dlSpecialPulse {
+    0%, 100% {
+        box-shadow: 0 0 8px rgba(255, 45, 120, 0.35), 0 0 16px rgba(255, 45, 120, 0.15);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(255, 45, 120, 0.8), 0 0 40px rgba(255, 45, 120, 0.35),
+                    inset 0 0 10px rgba(255, 45, 120, 0.12);
+    }
+}
+
+@keyframes dlSpecialCurrentPulse {
+    0%, 100% {
+        box-shadow: 0 0 14px rgba(245, 208, 0, 0.45), 0 0 28px rgba(255, 45, 120, 0.35);
+        transform: scale(1.06);
+    }
+    50% {
+        box-shadow: 0 0 28px rgba(245, 208, 0, 0.8), 0 0 55px rgba(255, 45, 120, 0.55);
+        transform: scale(1.10);
+    }
+}
+
+/* BONUS badge on special days */
+.dl-special-badge {
+    position: absolute;
+    top: -7px; right: -5px;
+    background: linear-gradient(135deg, var(--neon-pink), #c000a0);
+    color: #fff;
+    font-family: var(--font-hud);
+    font-size: 5.5px;
+    font-weight: 800;
+    padding: 2px 5px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 0 8px rgba(255, 45, 120, 0.65);
+}
+
+/* ── Claim Button Area ── */
+.dl-claim-wrap {
+    margin-top: 4px;
+}
+
+#dailyClaimBtn {
+    width: 100%;
+    justify-content: center;
+}
+
+#dailyClaimBtn:disabled {
+    background: rgba(57, 255, 20, 0.07) !important;
+    border-color: rgba(57, 255, 20, 0.3) !important;
+    color: var(--neon-green) !important;
+    box-shadow: none !important;
+    cursor: not-allowed !important;
+    animation: none !important;
+    opacity: 0.85;
+}
+#dailyClaimBtn:disabled .btn-glow { display: none; }
+
+.dl-status-msg {
+    text-align: center;
+    font-family: var(--font-hud);
+    font-size: 9.5px;
+    color: var(--text-dim);
+    margin-top: 9px;
+    letter-spacing: 0.5px;
+    min-height: 14px;
+}
+
+/* ── Flying Coin Animation ── */
+.dl-fly-coin {
+    position: fixed;
+    font-size: 16px;
+    pointer-events: none;
+    z-index: 9999;
+    animation: dlCoinFly 0.95s cubic-bezier(0.18, 0.88, 0.36, 1.1) forwards;
+    filter: drop-shadow(0 0 6px rgba(245, 208, 0, 0.9));
+}
+
+@keyframes dlCoinFly {
+    0%   { transform: translate(0, 0)               scale(1.1); opacity: 1; }
+    70%  { opacity: 1; }
+    100% { transform: translate(var(--tx), var(--ty)) scale(0.35); opacity: 0; }
+}
+
+/* ── Streak info chip ── */
+.dl-streak-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255, 120, 30, 0.1);
+    border: 1px solid rgba(255, 120, 30, 0.3);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-family: var(--font-hud);
+    font-size: 9px;
+    color: #ff9040;
+    letter-spacing: 0.5px;
+    margin-top: 8px;
+}

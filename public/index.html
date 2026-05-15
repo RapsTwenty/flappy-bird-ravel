@@ -7,6 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <!-- ★ DAILY LOGIN STYLES ★ -->
+    <link rel="stylesheet" href="daily-login.css">
 </head>
 <body>
 
@@ -88,12 +90,24 @@
                 <!-- Canvas Area -->
                 <div class="canvas-section">
                     <div class="canvas-header">
-                        <div class="player-badge">
-                            <button class="mobile-menu-btn" onclick="openMobileMenu()" aria-label="Menu">
-                                <span></span><span></span><span></span>
+
+                        <!-- ★ PLAYER AREA: avatar + daily login btn ★ -->
+                        <div class="player-area">
+                            <div class="player-badge">
+                                <button class="mobile-menu-btn" onclick="openMobileMenu()" aria-label="Menu">
+                                    <span></span><span></span><span></span>
+                                </button>
+                                <img id="playerAvatarBtn" class="player-avatar-btn" src="" alt="Profile" onclick="openProfileCard(null, true)" title="Lihat Profil">
+                                <span id="playerName" class="player-name">PLAYER</span>
+                            </div>
+
+                            <!-- ★ DAILY LOGIN OPEN BUTTON ★
+                                 Muncul hanya saat tidak main (dikontrol JS) -->
+                            <button id="dailyLoginOpenBtn"
+                                    onclick="openDailyLoginModal()"
+                                    title="Ambil Daily Reward!">
+                                📅 DAILY REWARD
                             </button>
-                            <img id="playerAvatarBtn" class="player-avatar-btn" src="" alt="Profile" onclick="openProfileCard(null, true)" title="Lihat Profil">
-                            <span id="playerName" class="player-name">PLAYER</span>
                         </div>
 
                         <!-- ★ COIN HUD ★ -->
@@ -323,7 +337,42 @@
         </div>
     </div>
 
+    <!-- ════════════════════════════════════════
+         ★ DAILY LOGIN MODAL ★
+    ════════════════════════════════════════ -->
+    <div id="dailyLoginModal" class="dl-overlay hidden">
+        <div class="dl-modal">
+
+            <!-- Close button -->
+            <button class="dl-close-btn" onclick="closeDailyLoginModal()" title="Tutup">✕</button>
+
+            <!-- Header -->
+            <div class="dl-modal-header">
+                <span class="dl-modal-icon">🎁</span>
+                <div class="dl-modal-title">DAILY REWARD</div>
+                <div class="dl-modal-sub">Login setiap hari untuk reward yang makin besar!</div>
+            </div>
+
+            <!-- Calendar 7 hari -->
+            <div id="dlCalendarGrid" class="dl-calendar-grid">
+                <!-- diisi oleh daily-login.js -->
+            </div>
+
+            <!-- Tombol Klaim -->
+            <div class="dl-claim-wrap">
+                <button id="dlClaimBtn" class="btn-neon btn-cyan" onclick="claimDailyReward()">
+                    <span>🎁 KLAIM REWARD</span>
+                    <div class="btn-glow"></div>
+                </button>
+                <div id="dlStatusMsg" class="dl-status-msg"></div>
+            </div>
+
+        </div>
+    </div>
+
     <script src="game.js"></script>
+    <!-- ★ DAILY LOGIN SCRIPT ★ (harus setelah game.js) -->
+    <script src="daily-login.js"></script>
     <script>
         // Generate floating particles
         const particlesEl = document.getElementById('particles');
