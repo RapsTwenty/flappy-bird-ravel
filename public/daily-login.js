@@ -5,12 +5,12 @@
 
 // ── Reward table ──────────────────────────────────────────────
 const DAILY_REWARDS = [
-    { day: 1, coins: 10,  emoji: '🪙',  special: false },
-    { day: 2, coins: 20,  emoji: '🪙',  special: false },
+    { day: 1, coins: 10,  emoji: '<img src="assets/coin.png" class="dl-coin-icon" alt="Koin">',  special: false },
+    { day: 2, coins: 20,  emoji: '<img src="assets/coin.png" class="dl-coin-icon" alt="Koin">',  special: false },
     { day: 3, coins: 50,  emoji: '💰',  special: true  }, // Hari Bonus
-    { day: 4, coins: 30,  emoji: '🪙',  special: false },
-    { day: 5, coins: 40,  emoji: '🪙',  special: false },
-    { day: 6, coins: 60,  emoji: '🪙',  special: false },
+    { day: 4, coins: 30,  emoji: '<img src="assets/coin.png" class="dl-coin-icon" alt="Koin">',  special: false },
+    { day: 5, coins: 40,  emoji: '<img src="assets/coin.png" class="dl-coin-icon" alt="Koin">',  special: false },
+    { day: 6, coins: 60,  emoji: '<img src="assets/coin.png" class="dl-coin-icon" alt="Koin">',  special: false },
     { day: 7, coins: 100, emoji: '👑',  special: true  }, // Jackpot!
 ];
 
@@ -105,7 +105,7 @@ function _dlRenderCalendar() {
             <div class="${cls}">
                 <div class="dl-day-num">DAY ${r.day}</div>
                 <div class="dl-day-emoji">${showEmoji}</div>
-                <div class="dl-day-coins">+${r.coins}🪙</div>
+                <div class="dl-day-coins">+${r.coins}<img src="assets/coin.png" class="dl-coin-sm" alt="Koin"></div>
                 ${r.special ? '<div class="dl-special-badge">BONUS!</div>' : ''}
             </div>
         `;
@@ -193,7 +193,7 @@ function _dlCoinFly(amount) {
             setTimeout(() => {
                 const coin = document.createElement('div');
                 coin.className = 'dl-fly-coin';
-                coin.textContent = '🪙';
+                coin.innerHTML = '<img src="assets/coin.png" class="dl-fly-coin-img" alt="Koin">';
 
                 // Sedikit acak posisi awal agar lebih natural
                 const jx = (Math.random() - 0.5) * 30;

@@ -347,7 +347,39 @@
     min-height: 14px;
 }
 
-/* ── Flying Coin Animation ── */
+/* ── Coin image icons (ganti emoji 🪙) ── */
+
+/* Icon di tengah kartu hari (ukuran = emoji dl-day-emoji ~21px) */
+.dl-coin-icon {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+    filter: drop-shadow(0 0 4px rgba(245, 208, 0, 0.5));
+}
+
+/* Icon kecil di teks "+X koin" */
+.dl-coin-sm {
+    width: 11px;
+    height: 11px;
+    object-fit: contain;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 1px;
+    filter: drop-shadow(0 0 3px rgba(245, 208, 0, 0.5));
+}
+
+/* Icon di animasi koin terbang */
+.dl-fly-coin-img {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    display: block;
+    filter: drop-shadow(0 0 6px rgba(245, 208, 0, 0.9));
+}
+
+
 .dl-fly-coin {
     position: fixed;
     font-size: 16px;
